@@ -1,10 +1,10 @@
 # AI-powered Scheduling Systems
 
 Assignments: <br>
-Frontend: sycccccccccccccc, zhaooo1166, KathyKo <br>
-Database & Backend: JKnightY, YuxuanZhang271 <br>
-Schedular: zhaooo1166, YuxuanZhang271 <br>
-Task Evaluation Model: sycccccccccccccc, JKnightY, KathyKo
+Frontend: Yuchen SUN (sycccccccccccccc), Jiahui Zhao (zhaooo1166), Ko Hung-Chi (KathyKo) <br>
+Database & Backend: Keyi JIN (JKnightY), Yuxuan Zhang (YuxuanZhang271) <br>
+Schedular: Jiahui Zhao (zhaooo1166), Yuxuan Zhang (YuxuanZhang271) <br>
+Task Evaluation Model: Yuchen SUN (sycccccccccccccc), Keyi JIN (JKnightY), Ko Hung-Chi (KathyKo)
 
 ## Table of Content
 - [Database](#database)
