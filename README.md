@@ -18,6 +18,7 @@ Framework:
 
 ## Frontend
 Framework: ReactJS
+Fragments: Timetable, Task Modify Window, AI Chatbot, Daily / Weekly Report Window
 
 ## Backend
 Framework: 
