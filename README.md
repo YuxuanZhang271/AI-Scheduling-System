@@ -16,8 +16,8 @@ Task Evaluation Model: Yuchen SUN (sycccccccccccccc), Keyi JIN (JKnightY), Ko Hu
 ## Database
 
 **Framework:** MongoDB
-**Collections:**
 
+**Collections:**
 ### Flexible Tasks Table
 
 | Variable Name         | Variable Type | Variable Range (Optional)                                        | Description |
@@ -84,7 +84,7 @@ Task Evaluation Model: Yuchen SUN (sycccccccccccccc), Keyi JIN (JKnightY), Ko Hu
 ---
      
 ## Frontend
-Framework: ReactJS
+Framework: ReactJS <br>
 Fragments: Timetable, Task Modify Window, AI Chatbot, Daily / Weekly Report Window
 
 ## Backend
