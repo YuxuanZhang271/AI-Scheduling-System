@@ -1,0 +1,122 @@
+.task-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.30);
+  z-index: 1000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.task-modal {
+  background: #f9f9f9;
+  width: 360px; /* 略微加宽，保证所有输入一致 */
+  padding: 20px;
+  border-radius: 16px;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.25);
+  font-family: Arial, sans-serif;
+  position: absolute;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: move;
+  margin-bottom: 12px;
+}
+
+.modal-title {
+  font-size: 18px;
+  font-weight: bold;
+  margin: 0;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 22px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+/* Task Name 框，统一宽度 & 灰色 */
+.input-field {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: none;
+  background: #e0e0e0;
+  font-size: 14px;
+  margin-bottom: 16px;
+}
+
+.section-title {
+  font-size: 16px;
+  font-weight: bold;
+  margin: 12px 0 8px;
+  display: flex;
+  align-items: center;
+}
+
+.option-group {
+  background: #dcdcdc;
+  border-radius: 12px;
+  margin-bottom: 16px;
+  overflow: hidden;
+}
+
+.option {
+  padding: 10px 12px;
+  background: #dcdcdc;
+  border-bottom: 1px solid #c0c0c0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.option:last-child {
+  border-bottom: none;
+}
+
+.option label {
+  font-size: 14px;
+  font-weight: bold;
+  color: #333;
+  white-space: nowrap;
+}
+
+/* 所有输入控件统一成灰色背景 */
+.inline-input {
+  flex: 1;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 14px;
+  background: #e0e0e0;
+  box-sizing: border-box;
+}
+
+/* 统一下拉框样式 */
+.inline-input select {
+  background: #e0e0e0;
+}
+
+/* 底部按钮 */
+.confirm-btn {
+  flex: 1;
+  background: orange;
+  color: #fff;
+  padding: 12px;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  text-align: center;
+}
+
+.confirm-btn:hover {
+  background: darkorange;
+}
