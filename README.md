@@ -18,69 +18,54 @@ Task Evaluation Model: Yuchen SUN (sycccccccccccccc), Keyi JIN (JKnightY), Ko Hu
 **Framework:** MongoDB
 
 **Collections:**
-### Flexible Tasks Table
-
-| Variable Name         | Variable Type | Variable Range (Optional)                                        | Description |
-|-----------------------|---------------|-------------------------------------------------------------------|-------------|
-| task_id              | int          | —                                                                 | Unique task identifier |
-| user_id              | int          | —                                                                 | ID of the user who created the task |
-| task_type            | int          | ["work", "rest", "food", "fun"]                                   | Type of task |
-| task_deadline        | datetime     | —                                                                 | Task deadline |
-| task_priority        | int          | [1, 2, 3]                                                         | Task priority level |
-| expected_duration    | int          | —                                                                 | Expected duration in minutes |
-| expected_difficulty  | int          | [1, 2, 3, 4, 5]                                                   | Self-assessed task difficulty |
-| predicted_energy     | float        | —                                                                 | Predicted energy level at execution |
-| predicted_pressure   | float        | —                                                                 | Predicted pressure level at execution |
-| assigned_start_time  | datetime     | deadline - assigned_start_time > expected_duration                | AI-assigned start time |
-| real_start_time      | datetime     | —                                                                 | Actual start time |
-| real_duration        | int          | —                                                                 | Actual duration in minutes |
-| real_energy          | float        | —                                                                 | Measured energy level during execution |
-| real_pressure        | float        | —                                                                 | Measured pressure level during execution |
-| status               | string       | [unassigned, assigned, processing, completed]                     | Task status |
-| task_description     | string       | —                                                                 | Description or notes |
-| task_location        | string       | —                                                                 | Task location |
-
----
-
 ### Fixed Tasks Table
 
-| Variable Name        | Variable Type | Variable Range (Optional)                   | Description |
-|----------------------|---------------|---------------------------------------------|-------------|
-| task_id             | int          | —                                           | Unique task identifier |
-| user_id             | int          | —                                           | ID of the user |
-| task_type           | int          | ["work", "rest", "food", "fun"]            | Type of task |
-| task_start_time     | datetime     | —                                           | Fixed start time |
-| task_duration       | int          | —                                           | Task duration in minutes |
-| expected_difficulty | int          | [1, 2, 3, 4, 5]                            | Self-assessed difficulty |
-| predicted_energy    | float        | —                                           | Predicted energy level |
-| predicted_pressure  | float        | —                                           | Predicted pressure level |
-| real_energy         | float        | —                                           | Actual energy level |
-| real_pressure       | float        | —                                           | Actual pressure level |
-| status              | string       | [assigned, processing, completed]          | Task status |
-| task_description    | string       | —                                           | Description or notes |
-| task_location       | string       | —                                           | Task location |
+| Name        | Type      | Range                           | Description |
+|-------------|-----------|---------------------------------|-------------|
+| task_id     | int       | —                               | Unique task identifier |
+| user_id     | int       | —                               | ID of the user |
+| task_type   | int       | ["work", "rest", "food", "fun"] | Type of task |
+| start_time  | datetime  | —                               | Fixed start time, format: `%Y%m%d%H%M` |
+| end_time    | datetime  | —                               | Fixed end time, format: `%Y%m%d%H%M` |
+| difficulty  | int       | [1, 2, 3, 4, 5]                 | Self-assessed difficulty |
+| energy      | float     | —                               | Energy level |
+| pressure    | float     | —                               | Pressure level |
+| description | string    | —                               | Description or notes |
+| location    | string    | —                               | Task location |
+---
 
+### Flexible Tasks Table
+| Name        | Type      | Range                           | Description             |
+|-------------|-----------|---------------------------------|-------------------------|
+| task_id     | int       | —                               | Identifier              |
+| user_id     | int       | —                               | User ID                 |
+| task_type   | int       | ["work", "rest", "food", "fun"] | Type                    |
+| start_time  | datetime  | —                               | Start time (%Y%m%d%H%M) |
+| duration    | int       | —                               | Duration (minutes)      |
+| difficulty  | int       | [1, 2, 3, 4, 5]                 | Difficulty              |
+| energy      | float     | —                               | Energy level            |
+| pressure    | float     | —                               | Pressure level          |
+| deadline    | datetime  | —                               | End time (%Y%m%d%H%M)   |
+| priority    | int       | [1, 2, 3]                       | Priority                |
+| description | string    | —                               | Description             |
+| location    | string    | —                               | Location                |
 ---
 
 ### Users Table
-
-| Variable Name   | Variable Type | Variable Range (Optional)                                                                     | Description |
-|-----------------|---------------|-----------------------------------------------------------------------------------------------|-------------|
-| user_id        | int          | —                                                                                             | Unique user ID |
-| user_name      | string       | ≤ 15 characters                                                                               | Username |
-| user_password  | string       | ≤ 20 characters, must contain uppercase, lowercase, and numbers simultaneously | User password (encrypted in practice) |
-
+| Name        | Type      | Range                                   | Description |
+|-------------|-----------|-----------------------------------------|-------------|
+| user_id     | int       | —                                       | User ID     |
+| username    | string    | ≤ 15 characters, only letters & numbers | Username    |
+| password    | string    | ≤ 20 characters, must uppercase, lowercase & numbers simultaneously | Password (encrypted)  |
 ---
 
 ### User_stats Table
-
-| Variable Name    | Variable Type | Variable Range (Optional) | Description |
-|------------------|---------------|---------------------------|-------------|
-| user_id         | int          | —                         | User ID |
-| current_time    | datetime     | —                         | Time of the record |
-| current_energy  | float        | 0 ~ 5                     | Reported energy level |
-| current_pressure| float        | 0 ~ 5                     | Reported pressure level |
-
+| Name      | Type      | Range | Description     |
+|-----------|-----------|-------|-----------------|
+| user_id   | int       | —     | User ID         |
+| time      | datetime  | —     | Current time    |
+| energy    | float     | 0 ~ 5 | Energy level    |
+| pressure  | float     | 0 ~ 5 | Pressure level  |
 ---
      
 ## Frontend

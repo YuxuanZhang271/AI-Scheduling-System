@@ -107,4 +107,5 @@ db.COLLECTION_NAME.find().sort(
 
 # Limitation & skipping
 db.myCollection.find().skip(5).limit(10)
+
 ```
