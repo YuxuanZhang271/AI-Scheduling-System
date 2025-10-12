@@ -1,118 +1,70 @@
-# AI-powered Scheduling Systems
+# Getting Started with Create React App
 
-Assignments: <br>
-Frontend: Yuchen SUN (sycccccccccccccc), Jiahui Zhao (zhaooo1166), Ko Hung-Chi (KathyKo) <br>
-Database & Backend: Keyi JIN (JKnightY), Yuxuan Zhang (YuxuanZhang271) <br>
-Schedular: Jiahui Zhao (zhaooo1166), Yuxuan Zhang (YuxuanZhang271) <br>
-Task Evaluation Model: Yuchen SUN (sycccccccccccccc), Keyi JIN (JKnightY), Ko Hung-Chi (KathyKo)
+This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
-## Table of Content
-- [Database](#database)
-- [Frontend](#frontend)
-- [Backend](#backend)
-- [Scheduler](#scheduler)
-- [Task Evaluation Model](#task-evaluation-model)
+## Available Scripts
 
-## Database
+In the project directory, you can run:
 
-**Framework:** MongoDB
+### `npm start`
 
-**Collections:**
-### Flexible Tasks Table
+Runs the app in the development mode.\
+Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
 
-| Variable Name         | Variable Type | Variable Range (Optional)                                        | Description |
-|-----------------------|---------------|-------------------------------------------------------------------|-------------|
-| task_id              | int          | —                                                                 | Unique task identifier |
-| user_id              | int          | —                                                                 | ID of the user who created the task |
-| task_type            | int          | ["work", "rest", "food", "fun"]                                   | Type of task |
-| task_deadline        | datetime     | —                                                                 | Task deadline |
-| task_priority        | int          | [1, 2, 3]                                                         | Task priority level |
-| expected_duration    | int          | —                                                                 | Expected duration in minutes |
-| expected_difficulty  | int          | [1, 2, 3, 4, 5]                                                   | Self-assessed task difficulty |
-| predicted_energy     | float        | —                                                                 | Predicted energy level at execution |
-| predicted_pressure   | float        | —                                                                 | Predicted pressure level at execution |
-| assigned_start_time  | datetime     | deadline - assigned_start_time > expected_duration                | AI-assigned start time |
-| real_start_time      | datetime     | —                                                                 | Actual start time |
-| real_duration        | int          | —                                                                 | Actual duration in minutes |
-| real_energy          | float        | —                                                                 | Measured energy level during execution |
-| real_pressure        | float        | —                                                                 | Measured pressure level during execution |
-| status               | string       | [unassigned, assigned, processing, completed]                     | Task status |
-| task_description     | string       | —                                                                 | Description or notes |
-| task_location        | string       | —                                                                 | Task location |
+The page will reload when you make changes.\
+You may also see any lint errors in the console.
 
----
+### `npm test`
 
-### Fixed Tasks Table
+Launches the test runner in the interactive watch mode.\
+See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
 
-| Variable Name        | Variable Type | Variable Range (Optional)                   | Description |
-|----------------------|---------------|---------------------------------------------|-------------|
-| task_id             | int          | —                                           | Unique task identifier |
-| user_id             | int          | —                                           | ID of the user |
-| task_type           | int          | ["work", "rest", "food", "fun"]            | Type of task |
-| task_start_time     | datetime     | —                                           | Fixed start time |
-| task_duration       | int          | —                                           | Task duration in minutes |
-| expected_difficulty | int          | [1, 2, 3, 4, 5]                            | Self-assessed difficulty |
-| predicted_energy    | float        | —                                           | Predicted energy level |
-| predicted_pressure  | float        | —                                           | Predicted pressure level |
-| real_energy         | float        | —                                           | Actual energy level |
-| real_pressure       | float        | —                                           | Actual pressure level |
-| status              | string       | [assigned, processing, completed]          | Task status |
-| task_description    | string       | —                                           | Description or notes |
-| task_location       | string       | —                                           | Task location |
+### `npm run build`
 
----
+Builds the app for production to the `build` folder.\
+It correctly bundles React in production mode and optimizes the build for the best performance.
 
-### Users Table
+The build is minified and the filenames include the hashes.\
+Your app is ready to be deployed!
 
-| Variable Name   | Variable Type | Variable Range (Optional)                                                                     | Description |
-|-----------------|---------------|-----------------------------------------------------------------------------------------------|-------------|
-| user_id        | int          | —                                                                                             | Unique user ID |
-| user_name      | string       | ≤ 15 characters                                                                               | Username |
-| user_password  | string       | ≤ 20 characters, must contain uppercase, lowercase, and numbers simultaneously | User password (encrypted in practice) |
+See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
 
----
+### `npm run eject`
 
-### User_stats Table
+**Note: this is a one-way operation. Once you `eject`, you can't go back!**
 
-| Variable Name    | Variable Type | Variable Range (Optional) | Description |
-|------------------|---------------|---------------------------|-------------|
-| user_id         | int          | —                         | User ID |
-| current_time    | datetime     | —                         | Time of the record |
-| current_energy  | float        | 0 ~ 5                     | Reported energy level |
-| current_pressure| float        | 0 ~ 5                     | Reported pressure level |
+If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
 
----
-     
-## Frontend
-Framework: ReactJS <br>
-Fragments: Timetable, Task Modify Window, AI Chatbot, Daily / Weekly Report Window
+Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
 
-## Backend
-**Framework:** FastAPI  
-**Language:** Python 3.10  
-**Environment:** Conda
+You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
 
-**Main Components:**
+## Learn More
 
-- 🧾 **Task Management API**  
-  - Handles CRUD operations for both fixed and flexible tasks.  
-  - Interacts with MongoDB to store and retrieve task data.
+You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
 
-- ⚡ **AI Scheduling Engine**  
-  - Automatically generates daily or weekly timetables based on tasks and user status.  
-  - Can integrate machine learning models or rule-based logic for optimization.
+To learn React, check out the [React documentation](https://reactjs.org/).
 
-## Scheduler
-Strategy: 
-1. Sort unassigned tasks by firstly deadline, secondly priority. <br>
-2. Pick the top task and attempt to assign it.  <br>
-3. Travesal time windows between current time and deadline, if not exceed the proportion of work-rest time, put it inside. <br>
-4. Shifting, swapping and evaluating. 
+### Code Splitting
 
-## Task Evaluation Model
-Training Model: Evolution Algorithm <br>
-Options: <br>
-1. Functions: Logistic, Gompertz<br>
-2. Paramters: Verticle Scale Parameter, Verticle offset, Time Scale Parameter, Time offset <br>
+This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
 
-Evaluation Method: MSE
+### Analyzing the Bundle Size
+
+This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+
+### Making a Progressive Web App
+
+This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+
+### Advanced Configuration
+
+This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+
+### Deployment
+
+This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+
+### `npm run build` fails to minify
+
+This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
