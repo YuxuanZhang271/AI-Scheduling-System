@@ -1,7 +1,14 @@
 import React, { useState, useEffect } from "react";
 import "./AddTask.css";
 
-export default function AddTask({ isOpen, onClose, onConfirm, onDelete, defaultTime, editingTask }) {
+export default function AddTask({
+  isOpen,
+  onClose,
+  onConfirm,
+  onDelete,
+  defaultTime,
+  editingTask,
+}) {
   const initialTask = editingTask || {
     name: "",
     startTime: defaultTime || "",
@@ -23,19 +30,35 @@ export default function AddTask({ isOpen, onClose, onConfirm, onDelete, defaultT
     setTask((prev) => ({ ...prev, [field]: value }));
   };
 
+  // 切換 mode 時清空不必要的欄位
+  useEffect(() => {
+    if (!task.mode) return;
+    setTask((prev) =>
+      prev.mode === "fixed"
+        ? { ...prev, deadline: "" }
+        : { ...prev, startTime: "" }
+    );
+  }, [task.mode]);
+
   const handleConfirmClick = () => {
-    if (!task.name || !task.startTime) return;
+    if (!task.name) return;
+    if (task.mode === "fixed" && !task.startTime) return;
+    if (task.mode === "flexible" && !task.deadline) return;
+    if (!task.mode) return;
+
     onConfirm({ ...task, id: task.id || Date.now() });
     onClose();
   };
 
-  // 拖动功能
+  // 拖曳
   useEffect(() => {
     if (!isOpen) return;
     const modal = document.querySelector(".task-modal");
     if (!modal) return;
 
-    let offsetX = 0, offsetY = 0, isDragging = false;
+    let offsetX = 0,
+      offsetY = 0,
+      isDragging = false;
 
     const header = modal.querySelector(".modal-header");
 
@@ -68,7 +91,6 @@ export default function AddTask({ isOpen, onClose, onConfirm, onDelete, defaultT
 
   if (!isOpen) return null;
 
-  // 分类颜色
   const categoryColors = {
     work: "#ffcc80",
     rest: "#81c784",
@@ -78,13 +100,15 @@ export default function AddTask({ isOpen, onClose, onConfirm, onDelete, defaultT
 
   return (
     <div className="task-modal-overlay">
-      <div className="task-modal">
+      <div className="task-modal" lang="en">
         {/* Header */}
-        <div className="modal-header" style={{ cursor: "move" }}>
+        <div className="modal-header">
           <h2 className="modal-title">
             {editingTask ? "Edit Task" : "Add Task"}
           </h2>
-          <button className="close-btn" onClick={onClose}>×</button>
+          <button className="close-btn" onClick={onClose}>
+            ×
+          </button>
         </div>
 
         {/* Task Name */}
@@ -96,18 +120,52 @@ export default function AddTask({ isOpen, onClose, onConfirm, onDelete, defaultT
           onChange={(e) => handleChange("name", e.target.value)}
         />
 
-        {/* 时间设置 */}
-        <div className="section-title">Task Time</div>
+        {/* Mode */}
+        <div className="section-title">Scheduling Mode</div>
         <div className="option-group">
           <div className="option">
-            <label>Start</label>
-            <input
-              type="datetime-local"
+            <label>Mode</label>
+            <select
               className="inline-input"
-              value={task.startTime}
-              onChange={(e) => handleChange("startTime", e.target.value)}
-            />
+              value={task.mode}
+              onChange={(e) => handleChange("mode", e.target.value)}
+            >
+              <option value="">Select</option>
+              <option value="fixed">Fixed</option>
+              <option value="flexible">Flexible</option>
+            </select>
           </div>
+        </div>
+
+        {/* Time */}
+        <div className="section-title">Task Time</div>
+        <div className="option-group">
+          {task.mode === "fixed" && (
+            <div className="option">
+              <label>Start</label>
+              <input
+                type="datetime-local"
+                className="inline-input time-input"
+                lang="en"
+                value={task.startTime}
+                onChange={(e) => handleChange("startTime", e.target.value)}
+              />
+            </div>
+          )}
+
+          {task.mode === "flexible" && (
+            <div className="option">
+              <label>Deadline</label>
+              <input
+                type="datetime-local"
+                className="inline-input time-input"
+                lang="en"
+                value={task.deadline}
+                onChange={(e) => handleChange("deadline", e.target.value)}
+              />
+            </div>
+          )}
+
           <div className="option">
             <label>Duration</label>
             <input
@@ -119,18 +177,9 @@ export default function AddTask({ isOpen, onClose, onConfirm, onDelete, defaultT
               max="24"
             />
           </div>
-          <div className="option">
-            <label>Deadline</label>
-            <input
-              type="date"
-              className="inline-input"
-              value={task.deadline}
-              onChange={(e) => handleChange("deadline", e.target.value)}
-            />
-          </div>
         </div>
 
-        {/* 分类设置 */}
+        {/* Settings */}
         <div className="section-title">Task Settings</div>
         <div className="option-group">
           <div className="option">
@@ -148,19 +197,6 @@ export default function AddTask({ isOpen, onClose, onConfirm, onDelete, defaultT
               <option value="rest">Rest</option>
               <option value="fun">Fun</option>
               <option value="food">Food</option>
-            </select>
-          </div>
-
-          <div className="option">
-            <label>Mode</label>
-            <select
-              className="inline-input"
-              value={task.mode}
-              onChange={(e) => handleChange("mode", e.target.value)}
-            >
-              <option value="">Select</option>
-              <option value="fixed">Fixed</option>
-              <option value="flexible">Flexible</option>
             </select>
           </div>
 
@@ -195,7 +231,7 @@ export default function AddTask({ isOpen, onClose, onConfirm, onDelete, defaultT
           </div>
         </div>
 
-        {/* 底部按钮 */}
+        {/* Buttons */}
         <div style={{ display: "flex", gap: "10px" }}>
           <button className="confirm-btn" onClick={handleConfirmClick}>
             {editingTask ? "Save" : "Confirm"}
