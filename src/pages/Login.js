@@ -1,10 +1,9 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom"; // ✅ 新增
+import { useNavigate } from "react-router-dom";
 import { loginUser } from "../services/api";
 
 export default function Login({ onLogin }) {
-
-  const navigate = useNavigate(); // ✅ 新增
+  const navigate = useNavigate();
 
   // form state
   const [email, setEmail] = useState("");
@@ -63,6 +62,7 @@ export default function Login({ onLogin }) {
     setPwdErrVisible(false);
   };
 
+  // ✅ 串接後端登入這裡改
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrorBanner("");
@@ -79,33 +79,41 @@ export default function Login({ onLogin }) {
 
     setLoading(true);
     try {
-      const res = await loginUser({ email, password, remember });
-      if (res.success) {
-        // ✅ 保存 token 到 localStorage
-        localStorage.setItem("authToken", res.token);
-        localStorage.setItem("userEmail", email);
+      // ⚡ 後端用 username/password，不是 email
+      const res = await loginUser({
+        username: email,
+        password: password,
+      });
 
-        setSuccessBanner("Sign in successful! Redirecting to dashboard...");
-        setTimeout(() => {
-          if (typeof onLogin === "function") onLogin();
-          navigate("/schedule"); // ✅ 跳转到日历页
-        }, 1000);
-      } else {
-        setErrorBanner(res.error || "Incorrect account or password.");
+      const token = res?.access_token;
+      if (!token) {
+        throw new Error("No token returned from server");
       }
+
+      // ✅ 保存 token 到 localStorage
+      localStorage.setItem("authToken", token);
+      localStorage.setItem("userEmail", email);
+
+      setSuccessBanner("Sign in successful! Redirecting to dashboard...");
+      setTimeout(() => {
+        if (typeof onLogin === "function") onLogin();
+        navigate("/schedule");
+      }, 1000);
     } catch (err) {
-      setErrorBanner("Network error. Please try again.");
+      console.error(err);
+      const msg =
+        err?.response?.data?.detail || "Incorrect account or password.";
+      setErrorBanner(msg);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="container">{/* 根容器（保留原始结构） */}
+    <div className="container">
       {/* 左侧品牌面板 */}
       <div className="brand-panel">
         <div className="logo">
-          {/* 原始 SVG 标志（简化保留） */}
           <svg width="44" height="44" viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
             <rect x="8" y="16" width="40" height="32" rx="8" fill="#003D7C"/>
             <circle cx="20" cy="28" r="4" fill="#EF7C00"/>
@@ -123,9 +131,8 @@ export default function Login({ onLogin }) {
         <h1 className="brand-title">AI-Powered Scheduling</h1>
         <p className="brand-subtitle">Smart daily planning that adapts to your energy and priorities.</p>
 
-        {/* 右侧插画（保留） */}
         <svg className="illustration" viewBox="0 0 200 160" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
-          {/* ... 你的插画 SVG 原样保留 ... */}
+          {/* 插画原样保留 */}
         </svg>
       </div>
 
