@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI-Powered Scheduling - Sign In</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background-color: #F7FAFF;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .container {
+            display: flex;
+            height: 100vh;
+            width: 1440px;
+            margin: 0 auto;
+            background: white;
+        }
+
+        /* Left Brand Panel */
+        .brand-panel {
+            width: 40%;
+            background: linear-gradient(135deg, #003D7C 0%, #002A5C 100%);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 60px 40px;
+            color: white;
+        }
+
+
+
+        .logo {
+            width: 60px;
+            height: 60px;
+            background: white;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 32px;
+            padding: 8px;
+        }
+
+        .brand-title {
+            font-size: 36px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            text-align: center;
+            line-height: 1.2;
+        }
+
+        .brand-subtitle {
+            font-size: 18px;
+            font-weight: 400;
+            text-align: center;
+            opacity: 0.9;
+            line-height: 1.5;
+            max-width: 320px;
+            margin-bottom: 40px;
+        }
+
+        .illustration {
+            width: 200px;
+            height: 160px;
+            margin-top: 20px;
+        }
+
+        /* Right Login Panel */
+        .login-panel {
+            width: 60%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 60px;
+            background: #F7FAFF;
+        }
+
+        .login-card {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 24px rgba(0, 61, 124, 0.08);
+            padding: 48px;
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .login-title {
+            font-size: 28px;
+            font-weight: 600;
+            color: #0F1724;
+            margin-bottom: 32px;
+            text-align: center;
+        }
+
+        .form-group {
+            margin-bottom: 24px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            color: #0F1724;
+            margin-bottom: 8px;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 16px;
+            border: 1.5px solid #E5E7EB;
+            border-radius: 8px;
+            font-size: 16px;
+            color: #0F1724;
+            background: white;
+            transition: all 0.2s ease;
+            box-sizing: border-box;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #003D7C;
+            box-shadow: 0 0 0 2px rgba(0, 61, 124, 0.1);
+        }
+
+        .form-input.error {
+            border-color: #EF4444;
+        }
+
+        .password-container {
+            position: relative;
+        }
+
+        .password-toggle {
+            position: absolute;
+            right: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: #6B7280;
+            cursor: pointer;
+            font-size: 14px;
+            padding: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 24px;
+            height: 24px;
+        }
+
+        .password-toggle:hover {
+            color: #003D7C;
+        }
+
+        .password-toggle:focus {
+            outline: 2px solid #003D7C;
+            outline-offset: 2px;
+            border-radius: 4px;
+        }
+
+        .error-message {
+            color: #EF4444;
+            font-size: 14px;
+            margin-top: 8px;
+            display: none;
+        }
+
+        .error-banner {
+            background: #FEF2F2;
+            border: 1px solid #FECACA;
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-bottom: 24px;
+            color: #DC2626;
+            font-size: 14px;
+            display: none;
+        }
+
+        .form-options {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 32px;
+        }
+
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+        }
+
+        .checkbox {
+            width: 18px;
+            height: 18px;
+            margin-right: 8px;
+            accent-color: #003D7C;
+        }
+
+        .checkbox-label {
+            font-size: 14px;
+            color: #6B7280;
+        }
+
+        .forgot-link {
+            color: #003D7C;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .forgot-link:hover {
+            text-decoration: underline;
+        }
+
+        .btn-primary {
+            width: 100%;
+            background: #EF7C00;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 16px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background: #D66A00;
+            transform: translateY(-1px);
+        }
+
+        .btn-primary:disabled {
+            background: #D1D5DB;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            width: 100%;
+            background: white;
+            color: #003D7C;
+            border: 1.5px solid #003D7C;
+            border-radius: 8px;
+            padding: 16px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-bottom: 24px;
+        }
+
+        .btn-secondary:hover {
+            background: #F8FAFC;
+            border-color: #002A5C;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0, 61, 124, 0.1);
+        }
+
+        .btn-secondary:focus {
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(0, 61, 124, 0.2);
+        }
+
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid transparent;
+            border-top: 2px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 8px;
+            display: none;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .form-loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+        .success-banner {
+            background: #F0FDF4;
+            border: 1px solid #BBF7D0;
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-bottom: 24px;
+            color: #166534;
+            font-size: 14px;
+            display: none;
+        }
+
+        .footer-text {
+            text-align: center;
+            font-size: 12px;
+            color: #9CA3AF;
+            line-height: 1.4;
+        }
+
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 8px;
+            padding: 48px;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+        }
+
+        .modal-title {
+            font-size: 28px;
+            font-weight: 600;
+            color: #0F1724;
+            margin-bottom: 32px;
+            text-align: center;
+        }
+
+        .close-modal {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #6B7280;
+            padding: 8px;
+        }
+
+        .close-modal:hover {
+            color: #003D7C;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1440px) {
+            .container {
+                width: 100%;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+            
+            .brand-panel, .login-panel {
+                width: 100%;
+            }
+            
+            .brand-panel {
+                min-height: 300px;
+                padding: 40px 20px;
+            }
+            
+            .login-panel {
+                padding: 40px 20px;
+            }
+            
+            .login-card {
+                padding: 32px 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Left Brand Panel -->
+        <div class="brand-panel">
+            <div class="logo">
+                <svg width="44" height="44" viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <!-- Robot Head -->
+                    <rect x="8" y="16" width="40" height="32" rx="8" fill="#003D7C"/>
+                    <!-- Eyes -->
+                    <circle cx="20" cy="28" r="4" fill="#EF7C00"/>
+                    <circle cx="36" cy="28" r="4" fill="#EF7C00"/>
+                    <!-- Eye pupils -->
+                    <circle cx="20" cy="28" r="2" fill="white"/>
+                    <circle cx="36" cy="28" r="2" fill="white"/>
+                    <!-- Mouth -->
+                    <rect x="22" y="36" width="12" height="4" rx="2" fill="#EF7C00"/>
+                    <!-- Antenna -->
+                    <line x1="28" y1="16" x2="28" y2="8" stroke="#003D7C" stroke-width="2"/>
+                    <circle cx="28" cy="6" r="3" fill="#EF7C00"/>
+                    <!-- Side panels -->
+                    <rect x="4" y="24" width="4" height="8" rx="2" fill="#003D7C"/>
+                    <rect x="48" y="24" width="4" height="8" rx="2" fill="#003D7C"/>
+                </svg>
+            </div>
+            <h1 class="brand-title">AI-Powered Scheduling</h1>
+            <p class="brand-subtitle">Smart daily planning that adapts to your energy and priorities.</p>
+            
+            <!-- AI Scheduling Illustration -->
+            <svg class="illustration" viewBox="0 0 200 160" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <!-- Calendar Base -->
+                <rect x="20" y="30" width="120" height="100" rx="8" fill="white" fill-opacity="0.1" stroke="white" stroke-width="2"/>
+                <rect x="20" y="30" width="120" height="20" rx="8" fill="white" fill-opacity="0.2"/>
+                
+                <!-- Calendar Grid -->
+                <line x1="35" y1="60" x2="35" y2="120" stroke="white" stroke-opacity="0.3"/>
+                <line x1="50" y1="60" x2="50" y2="120" stroke="white" stroke-opacity="0.3"/>
+                <line x1="65" y1="60" x2="65" y2="120" stroke="white" stroke-opacity="0.3"/>
+                <line x1="80" y1="60" x2="80" y2="120" stroke="white" stroke-opacity="0.3"/>
+                <line x1="95" y1="60" x2="95" y2="120" stroke="white" stroke-opacity="0.3"/>
+                <line x1="110" y1="60" x2="110" y2="120" stroke="white" stroke-opacity="0.3"/>
+                <line x1="125" y1="60" x2="125" y2="120" stroke="white" stroke-opacity="0.3"/>
+                
+                <line x1="20" y1="70" x2="140" y2="70" stroke="white" stroke-opacity="0.3"/>
+                <line x1="20" y1="85" x2="140" y2="85" stroke="white" stroke-opacity="0.3"/>
+                <line x1="20" y1="100" x2="140" y2="100" stroke="white" stroke-opacity="0.3"/>
+                <line x1="20" y1="115" x2="140" y2="115" stroke="white" stroke-opacity="0.3"/>
+                
+                <!-- AI Brain -->
+                <circle cx="160" cy="50" r="25" fill="#EF7C00" fill-opacity="0.2" stroke="#EF7C00" stroke-width="2"/>
+                <circle cx="155" cy="45" r="3" fill="#EF7C00"/>
+                <circle cx="165" cy="45" r="3" fill="#EF7C00"/>
+                <circle cx="160" cy="55" r="3" fill="#EF7C00"/>
+                <circle cx="150" cy="55" r="2" fill="#EF7C00" fill-opacity="0.6"/>
+                <circle cx="170" cy="55" r="2" fill="#EF7C00" fill-opacity="0.6"/>
+                
+                <!-- Connection Lines -->
+                <path d="M140 80 Q150 70 160 75" stroke="#EF7C00" stroke-width="2" fill="none" stroke-dasharray="4,4"/>
+                <path d="M140 90 Q150 85 160 75" stroke="#EF7C00" stroke-width="2" fill="none" stroke-dasharray="4,4"/>
+                
+                <!-- Clock -->
+                <circle cx="50" cy="140" r="15" fill="white" fill-opacity="0.1" stroke="white" stroke-width="2"/>
+                <line x1="50" y1="140" x2="50" y2="130" stroke="white" stroke-width="2"/>
+                <line x1="50" y1="140" x2="58" y2="140" stroke="white" stroke-width="2"/>
+            </svg>
+        </div>
+
+        <!-- Right Login Panel -->
+        <div class="login-panel">
+            <div class="login-card">
+                <div class="error-banner" id="errorBanner">
+                    Incorrect account or password.
+                </div>
+                
+                <div class="success-banner" id="successBanner">
+                    Sign in successful! Redirecting to dashboard...
+                </div>
+                
+                <h2 class="login-title">Sign in</h2>
+                
+                <form id="loginForm">
+                    <div class="form-group">
+                        <input 
+                            type="email" 
+                            id="email" 
+                            class="form-input" 
+                            placeholder="Account"
+                            required
+                            aria-label="Email address"
+                        >
+                        <div class="error-message" id="emailError">Please enter a valid email</div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <div class="password-container">
+                            <input 
+                                type="password" 
+                                id="password" 
+                                class="form-input" 
+                                placeholder="Password"
+                                required
+                                aria-label="Password"
+                            >
+                            <button type="button" class="password-toggle" id="passwordToggle" aria-label="Show password">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                    <circle cx="12" cy="12" r="3"/>
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="error-message" id="passwordError">Please enter your password.</div>
+                    </div>
+                    
+                    <div class="form-options">
+                        <div class="checkbox-container">
+                            <input type="checkbox" id="remember" class="checkbox">
+                            <label for="remember" class="checkbox-label">Remember me</label>
+                        </div>
+                        <a href="#" class="forgot-link">Forgot password?</a>
+                    </div>
+                    
+                    <button type="submit" class="btn-primary" id="signInBtn" disabled>
+                        <div class="spinner" id="spinner"></div>
+                        <span id="btnText">Sign in</span>
+                    </button>
+                </form>
+                
+                <button type="button" class="btn-secondary" id="createAccountBtn">
+                    Create account
+                </button>
+                
+                <p class="footer-text">
+                    By signing in you agree to our Terms & Privacy.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Forgot Password Modal -->
+    <div class="modal-overlay" id="forgotModal">
+        <div class="modal-content" style="position: relative;">
+            <button class="close-modal" id="closeForgotModal">&times;</button>
+            <h2 class="modal-title">Reset Password</h2>
+            
+            <form id="forgotForm">
+                <div class="form-group">
+                    <input 
+                        type="email" 
+                        class="form-input" 
+                        placeholder="Enter your email address"
+                        required
+                    >
+                </div>
+                
+                <button type="submit" class="btn-primary">
+                    Send Reset Link
+                </button>
+                
+                <button type="button" class="btn-secondary" id="backToSignInFromForgot">
+                    Back to sign in
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Sign Up Modal -->
+    <div class="modal-overlay" id="signupModal">
+        <div class="modal-content" style="position: relative;">
+            <button class="close-modal" id="closeModal">&times;</button>
+            <h2 class="modal-title">Create account</h2>
+            
+            <form id="signupForm">
+                <div class="form-group">
+                    <input 
+                        type="text" 
+                        class="form-input" 
+                        placeholder="Full name"
+                        required
+                    >
+                </div>
+                
+                <div class="form-group">
+                    <input 
+                        type="email" 
+                        class="form-input" 
+                        placeholder="Email address"
+                        required
+                    >
+                </div>
+                
+                <div class="form-group">
+                    <input 
+                        type="password" 
+                        class="form-input" 
+                        placeholder="Password"
+                        required
+                    >
+                </div>
+                
+                <div class="form-group">
+                    <input 
+                        type="password" 
+                        class="form-input" 
+                        placeholder="Confirm password"
+                        required
+                    >
+                </div>
+                
+                <button type="submit" class="btn-primary">
+                    Create account
+                </button>
+                
+                <button type="button" class="btn-secondary" id="backToSignIn">
+                    Back to sign in
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Form elements
+        const emailInput = document.getElementById('email');
+        const passwordInput = document.getElementById('password');
+        const signInBtn = document.getElementById('signInBtn');
+        const passwordToggle = document.getElementById('passwordToggle');
+        const loginForm = document.getElementById('loginForm');
+        const errorBanner = document.getElementById('errorBanner');
+        const successBanner = document.getElementById('successBanner');
+        const emailError = document.getElementById('emailError');
+        const passwordError = document.getElementById('passwordError');
+        const spinner = document.getElementById('spinner');
+        const btnText = document.getElementById('btnText');
+        const createAccountBtn = document.getElementById('createAccountBtn');
+        const signupModal = document.getElementById('signupModal');
+        const closeModal = document.getElementById('closeModal');
+        const backToSignIn = document.getElementById('backToSignIn');
+        const forgotModal = document.getElementById('forgotModal');
+        const closeForgotModal = document.getElementById('closeForgotModal');
+        const backToSignInFromForgot = document.getElementById('backToSignInFromForgot');
+
+        // Email validation
+        function isValidEmail(email) {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return emailRegex.test(email);
+        }
+
+        // Form validation
+        function validateForm() {
+            const email = emailInput.value.trim();
+            const password = passwordInput.value.trim();
+            
+            const isEmailValid = email && isValidEmail(email);
+            const isPasswordValid = password.length > 0;
+            
+            signInBtn.disabled = !(isEmailValid && isPasswordValid);
+            
+            return { isEmailValid, isPasswordValid };
+        }
+
+        // Input event listeners
+        emailInput.addEventListener('input', function() {
+            const { isEmailValid } = validateForm();
+            
+            if (this.value && !isEmailValid) {
+                this.classList.add('error');
+                emailError.style.display = 'block';
+            } else {
+                this.classList.remove('error');
+                emailError.style.display = 'none';
+            }
+            
+            errorBanner.style.display = 'none';
+        });
+
+        passwordInput.addEventListener('input', function() {
+            validateForm();
+            this.classList.remove('error');
+            passwordError.style.display = 'none';
+            errorBanner.style.display = 'none';
+        });
+
+        // Password toggle
+        passwordToggle.addEventListener('click', function() {
+            const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+            passwordInput.setAttribute('type', type);
+            
+            // Update icon
+            if (type === 'password') {
+                this.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                    <circle cx="12" cy="12" r="3"/>
+                </svg>`;
+                this.setAttribute('aria-label', 'Show password');
+            } else {
+                this.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                    <line x1="1" y1="1" x2="23" y2="23"/>
+                </svg>`;
+                this.setAttribute('aria-label', 'Hide password');
+            }
+        });
+
+        // Form submission
+        loginForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const { isEmailValid, isPasswordValid } = validateForm();
+            
+            if (!isEmailValid || !isPasswordValid) {
+                return;
+            }
+            
+            // Hide any existing banners
+            errorBanner.style.display = 'none';
+            successBanner.style.display = 'none';
+            
+            // Show loading state
+            signInBtn.disabled = true;
+            spinner.style.display = 'block';
+            btnText.textContent = 'Signing in...';
+            loginForm.classList.add('form-loading');
+            
+            // Simulate API call
+            setTimeout(() => {
+                // Simulate success/error randomly for demo (70% success rate)
+                const isSuccess = Math.random() > 0.3;
+                
+                if (isSuccess) {
+                    // Success path
+                    successBanner.style.display = 'block';
+                    spinner.style.display = 'none';
+                    btnText.textContent = 'Success!';
+                    
+                    // Simulate redirect to dashboard
+                    setTimeout(() => {
+                        alert('Redirecting to dashboard... (This would navigate to the main app)');
+                        // Reset form for demo
+                        resetForm();
+                    }, 1500);
+                } else {
+                    // Error path
+                    errorBanner.style.display = 'block';
+                    
+                    // Reset button state
+                    signInBtn.disabled = false;
+                    spinner.style.display = 'none';
+                    btnText.textContent = 'Sign in';
+                    loginForm.classList.remove('form-loading');
+                    
+                    validateForm(); // Re-enable if form is valid
+                }
+            }, 2000);
+        });
+        
+        // Reset form function
+        function resetForm() {
+            emailInput.value = '';
+            passwordInput.value = '';
+            signInBtn.disabled = true;
+            spinner.style.display = 'none';
+            btnText.textContent = 'Sign in';
+            loginForm.classList.remove('form-loading');
+            errorBanner.style.display = 'none';
+            successBanner.style.display = 'none';
+            emailError.style.display = 'none';
+            passwordError.style.display = 'none';
+            emailInput.classList.remove('error');
+            passwordInput.classList.remove('error');
+        }
+
+        // Create account modal
+        createAccountBtn.addEventListener('click', function() {
+            signupModal.style.display = 'flex';
+        });
+
+        closeModal.addEventListener('click', function() {
+            signupModal.style.display = 'none';
+        });
+
+        backToSignIn.addEventListener('click', function() {
+            signupModal.style.display = 'none';
+        });
+
+        // Forgot password modal
+        document.querySelector('.forgot-link').addEventListener('click', function(e) {
+            e.preventDefault();
+            forgotModal.style.display = 'flex';
+        });
+
+        closeForgotModal.addEventListener('click', function() {
+            forgotModal.style.display = 'none';
+        });
+
+        backToSignInFromForgot.addEventListener('click', function() {
+            forgotModal.style.display = 'none';
+        });
+
+        // Close modal on overlay click
+        signupModal.addEventListener('click', function(e) {
+            if (e.target === signupModal) {
+                signupModal.style.display = 'none';
+            }
+        });
+
+        forgotModal.addEventListener('click', function(e) {
+            if (e.target === forgotModal) {
+                forgotModal.style.display = 'none';
+            }
+        });
+
+        // Signup form submission
+        document.getElementById('signupForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            alert('Sign up functionality would be implemented here!');
+        });
+
+        // Forgot password form submission
+        document.getElementById('forgotForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            alert('Password reset link sent! (This would send an email)');
+            forgotModal.style.display = 'none';
+        });
+
+        // Initial validation
+        validateForm();
+
+        // Keyboard accessibility
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                if (signupModal.style.display === 'flex') {
+                    signupModal.style.display = 'none';
+                }
+                if (forgotModal.style.display === 'flex') {
+                    forgotModal.style.display = 'none';
+                }
+            }
+        });
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'987505e661149998',t:'MTc1OTI0ODk2OS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
