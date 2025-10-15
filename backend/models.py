@@ -1,0 +1,4 @@
+USER_COLLECTION = "users"
+USER_STATS_COLLECTION = "user_stats"
+FIXED_TASKS_COLLECTION = "fixed_tasks"
+FLEX_TASKS_COLLECTION = "flex_tasks"
