@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import HeaderBar from "../components/HeaderBar/HeaderBar";
 import AddTask from "../components/AddTask/AddTask";
+<<<<<<< HEAD
 import {
   getTasks,
   createTask,
@@ -73,6 +74,9 @@ const nextStatusMap = {
   assigned: "processing",
   processing: "completed",
 };
+=======
+import { getTasks, createTask, deleteTask } from "../services/api";
+>>>>>>> 30116164397e8c1561c270e9510c582eea7af293
 
 export default function TasksBoard() {
   const columns = ["Unassigned", "Assigned", "Processing", "Completed"];
@@ -83,22 +87,35 @@ export default function TasksBoard() {
   const [time, setTime] = useState(new Date());
   const [energy, setEnergy] = useState(2);
   const [pressure, setPressure] = useState(3);
+<<<<<<< HEAD
   const [flashIds, setFlashIds] = useState([]);
   const [loading, setLoading] = useState(false);
   const location = useLocation();
   const userId = localStorage.getItem("user_id");
 
   // 实时时钟
+=======
+  const location = useLocation();
+
+  const userId = localStorage.getItem("user_id");
+
+  // 🕒 实时时钟
+>>>>>>> 30116164397e8c1561c270e9510c582eea7af293
   useEffect(() => {
     const timer = setInterval(() => setTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
 
+<<<<<<< HEAD
   // 获取任务
+=======
+  // 📦 加载灵活任务
+>>>>>>> 30116164397e8c1561c270e9510c582eea7af293
   const fetchTasks = async () => {
     if (!userId) return;
     try {
       const res = await getTasks(userId);
+<<<<<<< HEAD
       const fixedRaw = res?.data?.fixed || [];
       const flexRaw = res?.data?.flexible || [];
       const fixed = fixedRaw.map((d) => normalizeTask(d, "fixed"));
@@ -122,16 +139,30 @@ export default function TasksBoard() {
     }
   };
 
+=======
+      if (res && res.data) setTasks(res.data.flexible || []);
+    } catch (err) {
+      console.error("❌ Failed to load flexible tasks:", err);
+    }
+  };
+
+  // ✅ 页面首次加载
+>>>>>>> 30116164397e8c1561c270e9510c582eea7af293
   useEffect(() => {
     fetchTasks();
   }, [userId]);
 
+<<<<<<< HEAD
+=======
+  // ✅ 页面重新获得焦点时刷新
+>>>>>>> 30116164397e8c1561c270e9510c582eea7af293
   useEffect(() => {
     const onFocus = () => fetchTasks();
     window.addEventListener("focus", onFocus);
     return () => window.removeEventListener("focus", onFocus);
   }, [userId]);
 
+<<<<<<< HEAD
   useEffect(() => {
     const interval = setInterval(() => {
       fetchTasks();
@@ -145,12 +176,24 @@ export default function TasksBoard() {
       await fetchTasks();
     } catch (err) {
       console.error("❌ Failed to add task:", err);
+=======
+  // ✅ 添加任务
+  const handleConfirm = async (task) => {
+    try {
+      const res = await createTask(userId, task);
+      if (task.mode === "flexible") {
+        setTasks((prev) => [...prev, { ...task, id: res.data.task_id }]);
+      }
+    } catch (err) {
+      console.error("❌ Failed to add flexible task:", err);
+>>>>>>> 30116164397e8c1561c270e9510c582eea7af293
     } finally {
       setOpen(false);
       setEditingTask(null);
     }
   };
 
+<<<<<<< HEAD
   const handleDelete = async (id, type) => {
     try {
       await deleteTask(id, type === "fixed" ? "fixed" : "flex");
@@ -196,6 +239,18 @@ export default function TasksBoard() {
     Completed: tasks.filter((t) => t.status === "completed"),
   };
 
+=======
+  // ✅ 删除任务
+  const handleDelete = async (id) => {
+    try {
+      await deleteTask(id, "flex");
+      setTasks((prev) => prev.filter((t) => t.id !== id && t._id !== id));
+    } catch (err) {
+      console.error("❌ Failed to delete flexible task:", err);
+    }
+  };
+
+>>>>>>> 30116164397e8c1561c270e9510c582eea7af293
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
       <HeaderBar
@@ -211,6 +266,7 @@ export default function TasksBoard() {
         setPressure={setPressure}
       />
 
+<<<<<<< HEAD
       <div style={{ display: "flex", justifyContent: "flex-end", padding: "10px 20px" }}>
         <button
           onClick={handleRunScheduler}
@@ -231,6 +287,8 @@ export default function TasksBoard() {
         </button>
       </div>
 
+=======
+>>>>>>> 30116164397e8c1561c270e9510c582eea7af293
       <div style={{ flex: 1, padding: "20px" }}>
         <div style={{ display: "flex", gap: "20px", height: "100%" }}>
           {columns.map((col) => (
@@ -242,6 +300,7 @@ export default function TasksBoard() {
                 border: "1px solid #eee",
                 borderRadius: "8px",
                 padding: "10px",
+<<<<<<< HEAD
                 overflow: "auto",
               }}
             >
@@ -342,6 +401,31 @@ export default function TasksBoard() {
                   </div>
                 </div>
               ))}
+=======
+              }}
+            >
+              <h3 style={{ textAlign: "center" }}>{col}</h3>
+              {col === "Unassigned" &&
+                tasks.map((t) => (
+                  <div
+                    key={t.id || t._id}
+                    style={{
+                      background: "#fff",
+                      padding: "8px",
+                      borderRadius: "6px",
+                      marginBottom: "6px",
+                      boxShadow: "0 1px 4px rgba(0,0,0,0.1)",
+                      cursor: "pointer",
+                    }}
+                    onClick={() => {
+                      setEditingTask(t);
+                      setOpen(true);
+                    }}
+                  >
+                    {t.task_name || t.name}
+                  </div>
+                ))}
+>>>>>>> 30116164397e8c1561c270e9510c582eea7af293
             </div>
           ))}
         </div>
@@ -354,7 +438,11 @@ export default function TasksBoard() {
           setEditingTask(null);
         }}
         onConfirm={handleConfirm}
+<<<<<<< HEAD
         onDelete={(id) => handleDelete(id, "flex")}
+=======
+        onDelete={handleDelete}
+>>>>>>> 30116164397e8c1561c270e9510c582eea7af293
         defaultTime={defaultTime}
         editingTask={editingTask}
       />
