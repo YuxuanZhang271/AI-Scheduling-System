@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 
-<<<<<<< HEAD
 // ✅ 修复：将 YYYYMMDDHHMM 格式转换为 Date 对象
 function parseTaskTime(timeStr) {
   if (!timeStr || timeStr.length !== 12) {
@@ -29,9 +28,6 @@ function parseTaskTime(timeStr) {
 }
 
 // ✅ 修复：把 Date 转成 datetime-local 需要的本地字符串
-=======
-// 把 Date 转成 datetime-local 需要的本地字符串
->>>>>>> 30116164397e8c1561c270e9510c582eea7af293
 function toLocalInputValue(date) {
   const pad = (n) => String(n).padStart(2, "0");
   const y = date.getFullYear();
@@ -42,11 +38,7 @@ function toLocalInputValue(date) {
   return `${y}-${m}-${d}T${hh}:${mm}`;
 }
 
-<<<<<<< HEAD
 export default function Calendar({ tasks = [], onCellClick = () => {}, onTaskClick = () => {} }) {
-=======
-export default function Calendar({ tasks, onCellClick, onTaskClick }) {
->>>>>>> 30116164397e8c1561c270e9510c582eea7af293
   const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
   const hours = Array.from({ length: 24 }, (_, i) =>
     `${i.toString().padStart(2, "0")}:00`
@@ -64,11 +56,7 @@ export default function Calendar({ tasks, onCellClick, onTaskClick }) {
   weekStart.setHours(0, 0, 0, 0);
   weekStart.setDate(currentTime.getDate() - currentTime.getDay());
 
-<<<<<<< HEAD
   // ✅ 分类颜色
-=======
-  // 分类颜色
->>>>>>> 30116164397e8c1561c270e9510c582eea7af293
   const categoryColors = {
     work: "#ffcc80", // 橙
     rest: "#81c784", // 绿
@@ -76,44 +64,37 @@ export default function Calendar({ tasks, onCellClick, onTaskClick }) {
     food: "#f48fb1", // 粉
   };
 
-<<<<<<< HEAD
   // ✅ 调试：输出任务信息
   useEffect(() => {
-    console.log("📅 Calendar received tasks:", tasks);
-    tasks.forEach((task, index) => {
-      const taskDate = parseTaskTime(task.startTime);
-      console.log(`  Task ${index}:`, {
-        id: task.id,
-        name: task.name,
-        startTime: task.startTime,
-        parsedDate: taskDate?.toString(),
-        duration: task.duration,
-        category: task.category,
-        mode: task.mode
-      });
-    });
+    //
+    //tasks.forEach((task, index) => {
+      //const taskDate = parseTaskTime(task.startTime);
+      //console.log(`  Task ${index}:`, {
+        //id: task.id,
+        //name: task.name,
+        //startTime: task.startTime,
+        //parsedDate: taskDate?.toString(),
+        //duration: task.duration,
+        //category: task.category,
+        //mode: task.mode
+      //});
+    //});
     
     // 输出本周日期范围
-    console.log("📅 Week range:", {
-      start: weekStart.toString(),
-      days: days.map((_, i) => {
-        const dayDate = new Date(weekStart);
-        dayDate.setDate(weekStart.getDate() + i);
-        return dayDate.toString();
-      })
-    });
+    //console.log("📅 Week range:", {
+      //start: weekStart.toString(),
+      //days: days.map((_, i) => {
+        //const dayDate = new Date(weekStart);
+        //dayDate.setDate(weekStart.getDate() + i);
+        //return dayDate.toString();
+      //})
+    //});
   }, [tasks, weekStart]);
 
   return (
     <div
       style={{
         maxHeight: "600px",
-=======
-  return (
-    <div
-      style={{
-        maxHeight: "600px", // 可调节
->>>>>>> 30116164397e8c1561c270e9510c582eea7af293
         overflowY: "auto",
         border: "1px solid #ccc",
         borderRadius: "8px",
@@ -124,7 +105,6 @@ export default function Calendar({ tasks, onCellClick, onTaskClick }) {
         <thead>
           <tr>
             <th style={{ width: 60 }}></th>
-<<<<<<< HEAD
             {days.map((d, dayIndex) => {
               const dayDate = new Date(weekStart);
               dayDate.setDate(weekStart.getDate() + dayIndex);
@@ -145,31 +125,11 @@ export default function Calendar({ tasks, onCellClick, onTaskClick }) {
                 </th>
               );
             })}
-=======
-            {days.map((d) => (
-              <th
-                key={d}
-                style={{
-                  border: "1px solid #ddd",
-                  padding: 6,
-                  textAlign: "center",
-                  background: "#fafafa",
-                }}
-              >
-                {d}
-              </th>
-            ))}
->>>>>>> 30116164397e8c1561c270e9510c582eea7af293
           </tr>
         </thead>
         <tbody>
           {hours.map((h, hourIndex) => (
-<<<<<<< HEAD
             <tr key={h} style={{ height: 60 }}>
-=======
-            <tr key={h} style={{ height: 30 }}>
-              {/* 时间刻度 */}
->>>>>>> 30116164397e8c1561c270e9510c582eea7af293
               <td
                 style={{
                   border: "1px solid #ddd",
@@ -182,13 +142,7 @@ export default function Calendar({ tasks, onCellClick, onTaskClick }) {
                 {h}
               </td>
 
-<<<<<<< HEAD
               {days.map((_, dayIndex) => {
-=======
-              {/* 每天格子 */}
-              {days.map((_, dayIndex) => {
-                // 当前格子时间
->>>>>>> 30116164397e8c1561c270e9510c582eea7af293
                 const cellDate = new Date(weekStart);
                 cellDate.setDate(weekStart.getDate() + dayIndex);
                 cellDate.setHours(hourIndex, 0, 0, 0);
@@ -202,7 +156,6 @@ export default function Calendar({ tasks, onCellClick, onTaskClick }) {
                       position: "relative",
                       verticalAlign: "top",
                       cursor: "pointer",
-<<<<<<< HEAD
                       height: "60px",
                       minWidth: "120px",
                     }}
@@ -256,40 +209,17 @@ export default function Calendar({ tasks, onCellClick, onTaskClick }) {
                       const color = categoryColors[task.category] || "#e0f7fa";
                       const borderColor = task.mode === "fixed" ? "#d32f2f" : "#1976d2";
 
-                      console.log(`🎯 Rendering task: ${task.name}`, {
-                        startTime: task.startTime,
-                        parsedDate: taskStart.toString(),
-                        cellDate: cellDate.toString(),
-                        duration: task.duration,
-                        offset,
-                        height,
-                        hourIndex,
-                        dayIndex,
-                        isSameDay
-                      });
-=======
-                      height: "30px",
-                    }}
-                    onClick={() => onCellClick(cellLocal)}
-                  >
-                    {/* 渲染任务 */}
-                    {tasks.map((task) => {
-                      if (!task.startTime) return null;
-                      const start = new Date(task.startTime);
-                      const tDay = start.getDay();
-                      if (tDay !== dayIndex) return null;
-
-                      const tHour = start.getHours();
-                      const tMinute = start.getMinutes();
-                      const duration = parseInt(task.duration) || 1;
-                      const height = 30 * duration;
-                      const offset = (tHour - hourIndex) * 30 + (tMinute / 60) * 30;
-
-                      // 如果任务不在这一行对应的时间范围，就不显示
-                      if (offset < 0 || offset >= 30) return null;
-
-                      const color = categoryColors[task.category] || "#e0f7fa";
->>>>>>> 30116164397e8c1561c270e9510c582eea7af293
+                      //console.log(`🎯 Rendering task: ${task.name}`, {
+                        //startTime: task.startTime,
+                        //parsedDate: taskStart.toString(),
+                        //cellDate: cellDate.toString(),
+                        //duration: task.duration,
+                        //offset,
+                        //height,
+                        //hourIndex,
+                        //dayIndex,
+                        //isSameDay
+                      //});
 
                       return (
                         <div
@@ -297,7 +227,6 @@ export default function Calendar({ tasks, onCellClick, onTaskClick }) {
                           style={{
                             position: "absolute",
                             top: offset,
-<<<<<<< HEAD
                             left: 2,
                             right: 2,
                             height: Math.max(height, 20), // 最小高度20px
@@ -306,34 +235,18 @@ export default function Calendar({ tasks, onCellClick, onTaskClick }) {
                             borderRadius: 4,
                             padding: "2px 4px",
                             fontSize: 11,
-=======
-                            left: 0,
-                            right: 0,
-                            height,
-                            background: color,
-                            border: "2px solid #00838f",
-                            borderRadius: 6,
-                            padding: "4px",
-                            fontSize: 12,
->>>>>>> 30116164397e8c1561c270e9510c582eea7af293
                             fontWeight: "bold",
                             overflow: "hidden",
                             cursor: "pointer",
                             zIndex: 2,
                             display: "flex",
-<<<<<<< HEAD
                             flexDirection: "column",
                             justifyContent: "center",
-=======
-                            justifyContent: "space-between",
-                            alignItems: "center",
->>>>>>> 30116164397e8c1561c270e9510c582eea7af293
                           }}
                           onClick={(e) => {
                             e.stopPropagation();
                             onTaskClick(task);
                           }}
-<<<<<<< HEAD
                           title={`${task.name} (${task.mode}) · ${task.category} · ${task.duration}h`}
                         >
                           <div style={{ 
@@ -372,24 +285,6 @@ export default function Calendar({ tasks, onCellClick, onTaskClick }) {
                             {taskStart.getMinutes().toString().padStart(2, '0')} - 
                             {task.duration}h
                           </div>
-=======
-                          title={`${task.name} · ${task.category} · P${task.priority}`}
-                        >
-                          <span>{task.name}</span>
-                          {task.priority && (
-                            <span
-                              style={{
-                                fontSize: "10px",
-                                background: "rgba(0,0,0,0.2)",
-                                color: "#000",
-                                padding: "2px 4px",
-                                borderRadius: "4px",
-                              }}
-                            >
-                              P{task.priority}
-                            </span>
-                          )}
->>>>>>> 30116164397e8c1561c270e9510c582eea7af293
                         </div>
                       );
                     })}
@@ -402,8 +297,4 @@ export default function Calendar({ tasks, onCellClick, onTaskClick }) {
       </table>
     </div>
   );
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> 30116164397e8c1561c270e9510c582eea7af293
