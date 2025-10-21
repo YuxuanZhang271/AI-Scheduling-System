@@ -5,7 +5,6 @@ import AddTask from "../components/AddTask/AddTask";
 import HeaderBar from "../components/HeaderBar/HeaderBar";
 import { getTasks, createTask, deleteTask } from "../services/api";
 
-<<<<<<< HEAD
 // 时间转换为小时
 function fmtDuration(minutes) {
   if (!minutes) return "0 h";
@@ -16,7 +15,7 @@ function fmtDuration(minutes) {
   return `${minutes} min`;
 }
 
-// ✅ 修复：标准化 fixed 任务 - 确保时间格式正确
+// ✅ 修复：标准化 fixed 任务 - 添加预测值
 function normalizeFixedTask(doc) {
   console.log("📅 Normalizing fixed task:", doc);
   
@@ -35,29 +34,19 @@ function normalizeFixedTask(doc) {
     name: doc.task_name ?? doc.name ?? "",
     startTime: doc.task_start_time || "", // ✅ 保持 YYYYMMDDHHMM 格式
     duration: duration,
-=======
-// 将后端 fixed 文档映射为 Calendar 需要的前端结构
-function normalizeFixedTask(doc) {
-  return {
-    id: doc._id || doc.id,
-    name: doc.task_name ?? doc.name ?? "",
-    startTime: doc.task_start_time ?? doc.startTime ?? "",
-    duration:
-      doc.task_duration ??
-      doc.expected_duration ?? // 兜底
-      1,
->>>>>>> 30116164397e8c1561c270e9510c582eea7af293
     category: doc.task_type ?? doc.category ?? "work",
     difficulty: doc.expected_difficulty ?? doc.difficulty ?? 3,
     location: doc.task_location ?? doc.location ?? "",
     status: doc.status ?? "assigned",
     mode: "fixed",
-<<<<<<< HEAD
     priority: doc.task_priority ?? 1,
+    // ✅ 添加预测值
+    predicted_energy: doc.predicted_energy ?? null,
+    predicted_pressure: doc.predicted_pressure ?? null,
   };
 }
 
-// ✅ 修复：标准化灵活任务 - 确保时间格式正确
+// ✅ 修复：标准化灵活任务 - 添加预测值
 function normalizeFlexibleTask(doc) {
   console.log("🌀 Normalizing flexible task:", doc);
   
@@ -82,6 +71,9 @@ function normalizeFlexibleTask(doc) {
     priority: doc.task_priority ?? 1,
     status: doc.status ?? "unassigned",
     mode: "flexible",
+    // ✅ 添加预测值
+    predicted_energy: doc.predicted_energy ?? null,
+    predicted_pressure: doc.predicted_pressure ?? null,
   };
 }
 
@@ -103,14 +95,6 @@ function convertTimeFormat(timeStr) {
 export default function Schedule() {
   const [open, setOpen] = useState(false);
   const [tasks, setTasks] = useState([]);
-=======
-  };
-}
-
-export default function Schedule() {
-  const [open, setOpen] = useState(false);
-  const [tasks, setTasks] = useState([]); // 只存 fixed（已标准化）
->>>>>>> 30116164397e8c1561c270e9510c582eea7af293
   const [defaultTime, setDefaultTime] = useState("");
   const [editingTask, setEditingTask] = useState(null);
   const [time, setTime] = useState(new Date());
@@ -120,17 +104,12 @@ export default function Schedule() {
 
   const userId = localStorage.getItem("user_id");
 
-<<<<<<< HEAD
   // 🕒 实时更新时钟
-=======
-  // 时钟（你原逻辑保留）
->>>>>>> 30116164397e8c1561c270e9510c582eea7af293
   useEffect(() => {
     const t = setInterval(() => setTime(new Date()), 1000);
     return () => clearInterval(t);
   }, []);
 
-<<<<<<< HEAD
   // ✅ 从数据库读取所有任务并合并排序
   const fetchTasksFromDB = useCallback(async () => {
     if (!userId) return;
@@ -165,38 +144,17 @@ export default function Schedule() {
     }
   }, [userId]);
 
-=======
-  // 从数据库读取并标准化 fixed 任务
-  const fetchTasksFromDB = useCallback(async () => {
-    if (!userId) return;
-    try {
-      const res = await getTasks(userId);
-      const fixedRaw = (res?.data?.fixed ?? []);
-      const normalized = fixedRaw.map(normalizeFixedTask);
-      setTasks(normalized);
-    } catch (err) {
-      console.error("❌ Failed to fetch fixed tasks:", err);
-    }
-  }, [userId]);
-
-  // 进入页面时：拉取数据库
->>>>>>> 30116164397e8c1561c270e9510c582eea7af293
   useEffect(() => {
     fetchTasksFromDB();
   }, [fetchTasksFromDB]);
 
-<<<<<<< HEAD
   // ✅ 页面重新获得焦点时刷新
-=======
-  // 页面重新获得焦点（从别的页面切回 /schedule）：再次拉取数据库
->>>>>>> 30116164397e8c1561c270e9510c582eea7af293
   useEffect(() => {
     const onFocus = () => fetchTasksFromDB();
     window.addEventListener("focus", onFocus);
     return () => window.removeEventListener("focus", onFocus);
   }, [fetchTasksFromDB]);
 
-<<<<<<< HEAD
   // 每分钟刷新一次
   useEffect(() => {
     const interval = setInterval(() => fetchTasksFromDB(), 60000);
@@ -209,13 +167,6 @@ export default function Schedule() {
       console.log("➕ Creating task:", task);
       await createTask(userId, task);
       await fetchTasksFromDB();
-=======
-  // 创建任务：成功后不本地追加，直接重新拉取数据库，确保与 Calendar 字段一致
-  const handleConfirm = async (task) => {
-    try {
-      await createTask(userId, task);
-      await fetchTasksFromDB(); // ✅ 以数据库为准
->>>>>>> 30116164397e8c1561c270e9510c582eea7af293
     } catch (err) {
       console.error("❌ Failed to create task:", err);
     } finally {
@@ -224,16 +175,10 @@ export default function Schedule() {
     }
   };
 
-<<<<<<< HEAD
   // ✅ 删除任务
   const handleDelete = async (id) => {
     try {
       console.log("🗑️ Deleting task:", id);
-=======
-  // 删除任务：成功后再拉取数据库
-  const handleDelete = async (id) => {
-    try {
->>>>>>> 30116164397e8c1561c270e9510c582eea7af293
       await deleteTask(id, "fixed");
       await fetchTasksFromDB();
     } catch (err) {
@@ -258,11 +203,7 @@ export default function Schedule() {
 
       <div style={{ flex: 1, padding: 20 }}>
         <Calendar
-<<<<<<< HEAD
           tasks={tasks}
-=======
-          tasks={tasks} // ✅ 已标准化的 fixed 任务
->>>>>>> 30116164397e8c1561c270e9510c582eea7af293
           onAddTask={() => {
             setDefaultTime("");
             setEditingTask(null);
@@ -274,10 +215,7 @@ export default function Schedule() {
             setOpen(true);
           }}
           onTaskClick={(task) => {
-<<<<<<< HEAD
             console.log("📝 Editing task:", task);
-=======
->>>>>>> 30116164397e8c1561c270e9510c582eea7af293
             setEditingTask(task);
             setOpen(true);
           }}
@@ -294,8 +232,4 @@ export default function Schedule() {
       />
     </div>
   );
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> 30116164397e8c1561c270e9510c582eea7af293
