@@ -320,3 +320,43 @@ async def debug_tasks(user_id: str):
     except Exception as e:
         print(f"❌ Debug error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.put("/{task_id}")
+async def update_task(task_id: str, task_type: str, payload: dict):
+    if task_type not in ["fixed", "flex"]:
+        raise HTTPException(status_code=400, detail="task_type is required")
+    try:
+        collection = FIXED_TASK_COLLECTION if task_type == "fixed" else FLEXIBLE_TASK_COLLECTION
+
+        updates = {}
+        # 通用字段
+        for k in ["task_name","task_type","expected_difficulty","task_location","task_priority","status"]:
+            if k in payload: updates[k] = payload[k]
+
+        if task_type == "fixed":
+            # 支持前端传来的 startTime(YYYYMMDDHHMM) + duration(分钟/小时)
+            st = payload.get("startTime")
+            dur = payload.get("duration")
+            if st: updates["task_start_time"] = st
+            if dur is not None:
+                duration_minutes = int(float(dur))
+                try:
+                    start_dt = datetime.strptime(st or payload.get("task_start_time"), DATETIME_FORMAT)
+                    end_dt = start_dt + timedelta(minutes=duration_minutes)
+                    updates["task_duration"] = duration_minutes
+                    updates["task_end_time"] = end_dt.strftime(DATETIME_FORMAT)
+                except Exception:
+                    pass
+        else:
+            # flexible：支持 deadline / expected_duration
+            if "deadline" in payload:
+                updates["task_deadline"] = payload["deadline"]
+            if "duration" in payload:
+                updates["expected_duration"] = float(payload["duration"])
+
+        result = await db[collection].update_one({"_id": ObjectId(task_id)}, {"$set": updates})
+        if result.matched_count == 0:
+            raise HTTPException(status_code=404, detail="Task not found")
+        return {"task_id": task_id, "updated_fields": list(updates.keys())}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

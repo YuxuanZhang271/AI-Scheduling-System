@@ -4,7 +4,7 @@ import "./Chatbot.css";
 
 export default function Chatbot() {
   const [messages, setMessages] = useState([
-    { sender: "bot", text: "👋 Hello! I'm your AI Scheduling Assistant. How can I help you today?" },
+    { sender: "bot", text: "👋 Hello! I'm your AI Scheduling Assistant. Describe a task and I’ll add it for you." },
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -18,16 +18,33 @@ export default function Chatbot() {
     setLoading(true);
 
     try {
-      const res = await axios.post("http://127.0.0.1:8000/chatbot/reply", {
-        message: input,
-      });
+      const userId = localStorage.getItem("user_id"); // ✅ 从登录信息中获取
+      const res = await axios.post(
+        `http://127.0.0.1:8000/chatbot/reply?user_id=${userId}`,
+        { message: input }
+      );
 
-      const botMsg = { sender: "bot", text: res.data.reply };
-      setMessages((prev) => [...prev, botMsg]);
+      if (res.data && res.data.task_data) {
+        const task = res.data.task_data;
+        const botText = `✅ Task "${task.task_name}" created!\n\n📅 Mode: ${task.task_mode}\n🕒 ${
+          task.task_deadline || task.task_start_time
+        }\n⏱ Duration: ${task.expected_duration || task.task_duration} min\n⭐ Priority: ${
+          task.task_priority
+        }\n🎯 Difficulty: ${task.expected_difficulty}`;
+        setMessages((prev) => [...prev, { sender: "bot", text: botText }]);
+      } else {
+        const raw = res.data?.gpt_raw || "⚠️ No GPT output received.";
+        const msg = res.data?.message
+          ? `${res.data.message}\n\n🧠 GPT Raw Output:\n${raw}`
+          : `🧠 GPT Raw Output:\n${raw}`;
+        setMessages((prev) => [...prev, { sender: "bot", text: msg }]);
+      }
     } catch (err) {
       console.error("❌ Chatbot error:", err);
-      const errMsg = { sender: "bot", text: "⚠️ Sorry, I couldn’t process your request." };
-      setMessages((prev) => [...prev, errMsg]);
+      setMessages((prev) => [
+        ...prev,
+        { sender: "bot", text: "⚠️ Sorry, I couldn’t process your request." },
+      ]);
     } finally {
       setLoading(false);
     }
@@ -36,8 +53,8 @@ export default function Chatbot() {
   return (
     <div className="chatbot-container">
       <div className="chat-header">
-        <h2>AI Chatbot 💬</h2>
-        <p>Ask me about your schedule, tasks, or daily plans.</p>
+        <h2>AI Task Chatbot 🤖</h2>
+        <p>Describe your task in natural language — I’ll add it automatically!</p>
       </div>
 
       <div className="chat-window">
@@ -48,7 +65,7 @@ export default function Chatbot() {
         ))}
         {loading && (
           <div className="chat-message bot">
-            <div className="message-bubble">🤖 Thinking...</div>
+            <div className="message-bubble">🧠 Thinking...</div>
           </div>
         )}
       </div>
@@ -56,7 +73,7 @@ export default function Chatbot() {
       <div className="chat-input-area">
         <input
           type="text"
-          placeholder="Type your message..."
+          placeholder="E.g. Finish AI report by tomorrow night"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && handleSend()}

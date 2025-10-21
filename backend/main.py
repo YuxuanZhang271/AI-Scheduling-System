@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from routers import users
-from routers import users, login, tasks, scheduler  # ✅ 确保 login 在这里
+from routers import users, login, tasks, scheduler,chatbot  
 
 
 app = FastAPI(title="AI Scheduling System")
@@ -18,6 +18,7 @@ app.include_router(users.router)
 app.include_router(login.router)       # ✅ 这行必须存在
 app.include_router(tasks.router)
 app.include_router(scheduler.router)
+app.include_router(chatbot.router)
 
 @app.get("/")
 async def root():

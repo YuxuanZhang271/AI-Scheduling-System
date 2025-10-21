@@ -8,8 +8,8 @@ export default function AddTask({
   onDelete,
   defaultTime,
   editingTask,
+  updateTask,
 }) {
-<<<<<<< HEAD
   // ✅ 将后端格式 "202510192330" 转换为前端格式 "2025-10-19T23:30"
   const convertBackendToFrontend = (backendTime) => {
     if (!backendTime) return "";
@@ -45,19 +45,6 @@ export default function AddTask({
         difficulty: "",
       };
 
-=======
-  const initialTask = editingTask || {
-    name: "",
-    startTime: defaultTime || "",
-    duration: 1,
-    deadline: "",
-    category: "",
-    mode: "",
-    priority: "",
-    difficulty: "",
-  };
-
->>>>>>> 30116164397e8c1561c270e9510c582eea7af293
   const [task, setTask] = useState(initialTask);
 
   useEffect(() => {
@@ -93,7 +80,6 @@ export default function AddTask({
       return;
     }
 
-<<<<<<< HEAD
     // ✅ 时间格式转换函数：将 "2025-10-19T23:30" 转为 "202510192330"
     const convertTimeFormat = (isoTime) => {
       if (!isoTime) return "";
@@ -110,13 +96,6 @@ export default function AddTask({
       mode: task.mode,
       startTime: convertTimeFormat(task.startTime),  // ✅ 转换格式
       deadline: convertTimeFormat(task.deadline),    // ✅ 转换格式
-=======
-    const taskPayload = {
-      name: task.name,
-      mode: task.mode,
-      startTime: task.startTime,
-      deadline: task.deadline,
->>>>>>> 30116164397e8c1561c270e9510c582eea7af293
       duration: parseFloat(task.duration) || 1,
       category: task.category || "work",
       priority: parseInt(task.priority) || 2,
@@ -127,10 +106,6 @@ export default function AddTask({
     onClose();
   };
 
-<<<<<<< HEAD
-
-=======
->>>>>>> 30116164397e8c1561c270e9510c582eea7af293
   // 拖曳逻辑保持不变
   useEffect(() => {
     if (!isOpen) return;
@@ -321,7 +296,7 @@ export default function AddTask({
             <button
               className="confirm-btn"
               style={{ background: "red" }}
-              onClick={() => onDelete(task.id)}
+              onClick={() => onDelete(task.id,task.mode)}
             >
               Delete
             </button>
@@ -330,8 +305,4 @@ export default function AddTask({
       </div>
     </div>
   );
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> 30116164397e8c1561c270e9510c582eea7af293
