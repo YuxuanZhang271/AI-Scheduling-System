@@ -5,6 +5,8 @@ import datetime as dt
 import math
 import numpy as np
 import itertools
+from joblib import load
+
 
 from database import db
 from models import FIXED_TASK_COLLECTION, FLEXIBLE_TASK_COLLECTION
@@ -12,6 +14,36 @@ from models import FIXED_TASK_COLLECTION, FLEXIBLE_TASK_COLLECTION
 
 DATETIME_FORMAT = "%Y%m%d%H%M"
 TASK_TYPE = ["food", "fun", "work"]
+class AIScheduler:
+    def __init__(self, user_id):
+        self.user_id = user_id
+        # 加载模型
+        try:
+            self.energy_model = load("models/energy_loss_model.pkl")
+            self.pressure_model = load("models/pressure_increase_model.pkl")
+            print("✅ AI Models loaded successfully")
+        except Exception as e:
+            print("⚠️ Failed to load AI models:", e)
+            self.energy_model = None
+            self.pressure_model = None
+
+    def predict_task_impact(self, task):
+        """根据任务特征预测能量消耗与压力变化"""
+        if not self.energy_model or not self.pressure_model:
+            return None, None
+
+        try:
+            # 构建输入特征向量
+            # 这里根据你模型训练时的特征顺序调整！
+            X = np.array([[task.get("difficulty", 3),
+                           task.get("duration", 1),
+                           task.get("priority", 1)]])
+            energy_pred = float(self.energy_model.predict(X)[0])
+            pressure_pred = float(self.pressure_model.predict(X)[0])
+            return energy_pred, pressure_pred
+        except Exception as e:
+            print("⚠️ AI prediction error:", e)
+            return None, None
 
 
 def _prepare_attributes(task: dict) -> dict:
@@ -268,6 +300,59 @@ class Scheduler:
         unassigned_tasks.sort(key=lambda x: (x["deadline"], x["priority"], -x["duration"]))
         self.unscheduled_tasks = unassigned_tasks
         print(f"  Found {len(unassigned_tasks)} unscheduled tasks")
+
+        # === 🧠 运行 AI 模型预测能量与压力 ===
+        print("🤖 Running AI prediction for all tasks...")
+        ai = AIScheduler(self.user_id)
+
+        # 导入 predict_energy_pressure（用于兼容旧逻辑）
+        try:
+            from routers.scheduler import predict_energy_pressure
+        except Exception:
+            def predict_energy_pressure(**_):
+                return {"energy": 1.0, "pressure": 0.5}
+
+        # 合并所有任务
+        all_tasks = fixed_tasks + scheduled_tasks + unassigned_tasks
+
+        # 遍历并预测
+        for task in all_tasks:
+            e, p = ai.predict_task_impact(task)
+            # 若 AI 模型未加载成功或返回 None → 使用 fallback 模型
+            if e is None or p is None:
+                try:
+                    pred = predict_energy_pressure(
+                        task_type=task.get("type", "work"),
+                        difficulty=int(task.get("difficulty", 3)),
+                        duration_minutes=int(task.get("duration", 60))
+                    )
+                    e = pred["energy"]
+                    p = pred["pressure"]
+                except Exception:
+                    e, p = 1.0, 0.5
+
+            task["predicted_energy"] = e
+            task["predicted_pressure"] = p
+
+        # === 💾 写回 MongoDB ===
+        print("💾 Saving predictions to MongoDB...")
+        for task in all_tasks:
+            try:
+                coll = FIXED_TASK_COLLECTION if task.get("mode") == "fixed" else FLEXIBLE_TASK_COLLECTION
+                task_type = task.get("type") or task.get("category") or "work"
+                await db[coll].update_one(
+                    {"_id": ObjectId(task["task_id"])},
+                    {"$set": {
+                        "predicted_energy": task.get("predicted_energy", 1.0),
+                        "predicted_pressure": task.get("predicted_pressure", 0.5),
+                        "type": task_type,
+                    }}
+                )
+                print(f"  ✅ Updated {task.get('name')} predictions.")
+            except Exception as e:
+                print(f"  ❌ Failed to update {task.get('name')}: {e}")
+            
+
 
     def arrangeTasksToWindows(self):
         """将未分配任务分配到时间窗口"""
