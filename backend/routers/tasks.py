@@ -121,8 +121,17 @@ async def get_tasks(user_id: str):
 
         print(f"\n📥 GET /tasks/{user_id} complete")
         
-        return {"fixed": fixed_tasks, "flexible": flex_tasks}
+        for t in fixed_tasks + flex_tasks:
+            if "predicted_energy" not in t:
+                t["predicted_energy"] = None
+            if "predicted_pressure" not in t:
+                t["predicted_pressure"] = None
 
+        return {
+            "fixed": fixed_tasks,
+            "flexible": flex_tasks,
+            "ai_predictions": True
+                }
     except Exception as e:
         print(f"❌ Error loading tasks: {e}")
         import traceback
