@@ -30,19 +30,27 @@ def make_user_query(user_id: str):
 
 
 @router.get("/{user_id}")
-async def get_tasks(user_id: str):
+async def get_tasks(user_id: str, show_all: bool = True):  # ✅ 改为默认显示所有任务
     """
     获取某个用户的所有任务，自动更新状态
-    ✅ 如果 fixed 任务缺少 end_time，从 start_time 和 duration 动态计算
+    ✅ show_all=True: 显示所有任务（用于dashboard）
+    ✅ show_all=False: 只显示当天任务（用于主界面）
     """
     try:
         query = make_user_query(user_id)
         now = datetime.now()
+        today_str = now.strftime("%Y%m%d")  # 获取今天的日期字符串
         print(f"\n🕐 Current time: {now.strftime(DATETIME_FORMAT)}")
+        print(f"📅 Today's date: {today_str}")
+        print(f"🔍 Show all tasks: {show_all}")
 
         # 获取 fixed & flexible
         fixed_tasks = await db[FIXED_TASK_COLLECTION].find(query).to_list(None)
         flex_tasks = await db[FLEXIBLE_TASK_COLLECTION].find(query).to_list(None)
+
+        # 用于存储要返回的任务列表
+        filtered_fixed_tasks = []
+        filtered_flex_tasks = []
 
         # ✅ 自动更新 fixed 任务状态 - 检查是否超过结束时间
         print(f"📋 Checking {len(fixed_tasks)} fixed tasks:")
@@ -92,46 +100,112 @@ async def get_tasks(user_id: str):
                 except Exception as e:
                     print(f"    ❌ Error: {e}")
 
-        # ✅ 自动更新 flexible 任务状态 - assigned 时间到则变 processing
+            # ✅ 检查是否是当天的任务（只有在 show_all=false 时才过滤）
+            if not show_all:  # 只显示当天任务
+                task_date_str = None
+                # 尝试从不同字段获取任务日期
+                for time_field in ["task_start_time", "task_end_time", "start_time"]:
+                    time_str = t.get(time_field)
+                    if time_str and isinstance(time_str, str) and len(time_str) >= 8:
+                        task_date_str = time_str[:8]  # 提取 YYYYMMDD
+                        break
+                
+                if task_date_str == today_str:
+                    filtered_fixed_tasks.append(t)
+                    print(f"    📌 Included in today's view (date: {task_date_str})")
+                else:
+                    print(f"    ⏳ Excluded from today's view (date: {task_date_str}, today: {today_str})")
+            else:
+                # show_all=true，包含所有任务
+                filtered_fixed_tasks.append(t)
+
+        # ✅ 自动更新 flexible 任务状态
         print(f"📋 Checking {len(flex_tasks)} flexible tasks:")
         for t in flex_tasks:
             task_name = t.get('task_name', 'N/A')
             start_time = t.get("start_time")
             current_status = t.get("status", "unassigned")
+            duration = t.get("expected_duration", 60)  # 默认60分钟
             
-            print(f"  - {task_name}: status={current_status}, start_time={start_time}")
+            print(f"  - {task_name}: status={current_status}, start_time={start_time}, duration={duration}")
             
             if start_time and isinstance(start_time, str):
                 try:
                     st_dt = datetime.strptime(start_time, DATETIME_FORMAT)
+                    
+                    # 计算任务应该结束的时间
+                    # 假设 duration 是以分钟为单位
+                    end_dt = st_dt + timedelta(minutes=duration)
+                    
+                    # 状态转换逻辑
                     if current_status == "assigned" and now >= st_dt:
+                        # 到达开始时间，变为 processing
+                        new_status = "processing"
                         await db[FLEXIBLE_TASK_COLLECTION].update_one(
                             {"_id": t["_id"]},
-                            {"$set": {"status": "processing"}}
+                            {"$set": {"status": new_status}}
                         )
-                        t["status"] = "processing"
-                        print(f"    ✅ Updated to processing")
+                        t["status"] = new_status
+                        print(f"    ✅ Updated from assigned to processing")
+                    
+                    elif current_status == "processing" and now >= end_dt:
+                        # 超过结束时间，变为 completed
+                        new_status = "completed"
+                        await db[FLEXIBLE_TASK_COLLECTION].update_one(
+                            {"_id": t["_id"]},
+                            {"$set": {"status": new_status}}
+                        )
+                        t["status"] = new_status
+                        print(f"    ✅ Updated from processing to completed (ended at {end_dt})")
+                    
+                    else:
+                        print(f"    Status unchanged: {current_status}")
+                        
                 except Exception as e:
                     print(f"    ❌ Error: {e}")
 
+            # ✅ 检查是否是当天的任务（只有在 show_all=false 时才过滤）
+            if not show_all:  # 只显示当天任务
+                task_date_str = None
+                # 尝试从不同字段获取任务日期
+                for time_field in ["start_time", "task_deadline"]:
+                    time_str = t.get(time_field)
+                    if time_str and isinstance(time_str, str) and len(time_str) >= 8:
+                        task_date_str = time_str[:8]  # 提取 YYYYMMDD
+                        break
+                
+                if task_date_str == today_str:
+                    filtered_flex_tasks.append(t)
+                    print(f"    📌 Included in today's view (date: {task_date_str})")
+                else:
+                    print(f"    ⏳ Excluded from today's view (date: {task_date_str}, today: {today_str})")
+            else:
+                # show_all=true，包含所有任务
+                filtered_flex_tasks.append(t)
+
         # --- 转换 ObjectId 为字符串 ---
-        for t in fixed_tasks + flex_tasks:
+        for t in filtered_fixed_tasks + filtered_flex_tasks:
             t["_id"] = str(t["_id"])
             t["id"] = t["_id"]
 
         print(f"\n📥 GET /tasks/{user_id} complete")
+        print(f"📊 Returned tasks: {len(filtered_fixed_tasks)} fixed, {len(filtered_flex_tasks)} flexible")
+        print(f"📊 All tasks in DB: {len(fixed_tasks)} fixed, {len(flex_tasks)} flexible")
         
-        for t in fixed_tasks + flex_tasks:
+        for t in filtered_fixed_tasks + filtered_flex_tasks:
             if "predicted_energy" not in t:
                 t["predicted_energy"] = None
             if "predicted_pressure" not in t:
                 t["predicted_pressure"] = None
 
         return {
-            "fixed": fixed_tasks,
-            "flexible": flex_tasks,
-            "ai_predictions": True
-                }
+            "fixed": filtered_fixed_tasks,
+            "flexible": filtered_flex_tasks,
+            "ai_predictions": True,
+            "is_today_view": not show_all,  # 返回当前视图类型
+            "today_date": today_str,
+            "total_tasks_count": len(filtered_fixed_tasks) + len(filtered_flex_tasks)
+        }
     except Exception as e:
         print(f"❌ Error loading tasks: {e}")
         import traceback
@@ -359,4 +433,280 @@ async def update_task(task_id: str, task_type: str, payload: dict):
             raise HTTPException(status_code=404, detail="Task not found")
         return {"task_id": task_id, "updated_fields": list(updates.keys())}
     except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ==================== 在现有 tasks.py 文件末尾添加以下代码 ====================
+
+@router.post("/check-completion/{user_id}")
+async def check_and_complete_tasks(user_id: str):
+    """
+    检查并自动完成已过期的任务
+    - 检查 flexible 任务：如果当前时间 >= start_time + duration，则标记为 completed
+    - 检查 fixed 任务：如果当前时间 >= task_end_time，则标记为 completed
+    """
+    try:
+        query = make_user_query(user_id)
+        now = datetime.now()
+        
+        print(f"\n🕐 Checking task completion for user {user_id} at {now.strftime(DATETIME_FORMAT)}")
+        print(f"🕐 Current time object: {now}")
+        
+        completed_count = 0
+        
+        # ========== 检查 Flexible 任务 ==========
+        # ✅ 修改：查询所有有 start_time 的任务，不限制 status
+        flex_query_base = query.copy()
+        if "$or" in flex_query_base:
+            flex_query = {
+                "$and": [
+                    flex_query_base,
+                    {"start_time": {"$ne": None, "$exists": True}}
+                ]
+            }
+        else:
+            flex_query = {
+                **flex_query_base,
+                "start_time": {"$ne": None, "$exists": True}
+            }
+        
+        flex_tasks = await db[FLEXIBLE_TASK_COLLECTION].find(flex_query).to_list(None)
+        
+        print(f"📋 Checking {len(flex_tasks)} flexible tasks...")
+        
+        for task in flex_tasks:
+            task_name = task.get("task_name", "Unknown")
+            start_time = task.get("start_time")
+            duration = task.get("expected_duration", 60)
+            
+            if not start_time:
+                continue
+            
+            try:
+                # 解析开始时间
+                start_dt = datetime.strptime(start_time, DATETIME_FORMAT)
+                
+                # 计算结束时间
+                if duration < 10:  # 小时
+                    end_dt = start_dt + timedelta(hours=duration)
+                else:  # 分钟
+                    end_dt = start_dt + timedelta(minutes=duration)
+                
+                # 如果当前时间已经过了任务结束时间
+                if now >= end_dt:
+                    result = await db[FLEXIBLE_TASK_COLLECTION].update_one(
+                        {"_id": task["_id"]},
+                        {
+                            "$set": {
+                                "status": "completed",
+                                "completed_at": now.strftime(DATETIME_FORMAT)
+                            }
+                        }
+                    )
+                    
+                    if result.modified_count > 0:
+                        completed_count += 1
+                        print(f"  ✅ Auto-completed flexible task: {task_name} (ended at {end_dt.strftime(DATETIME_FORMAT)})")
+                
+            except Exception as e:
+                print(f"  ⚠️ Error processing flexible task {task_name}: {e}")
+                continue
+        
+        # ========== 检查 Fixed 任务 ==========
+        fixed_query = {**query, "status": {"$in": ["assigned"]}}
+        fixed_tasks = await db[FIXED_TASK_COLLECTION].find(fixed_query).to_list(None)
+        
+        print(f"📋 Checking {len(fixed_tasks)} fixed tasks...")
+        
+        for task in fixed_tasks:
+            task_name = task.get("task_name", "Unknown")
+            end_time_str = task.get("task_end_time")
+            
+            # 如果没有 end_time，尝试从 start_time 和 duration 计算
+            if not end_time_str and task.get("task_start_time") and task.get("task_duration"):
+                try:
+                    start_dt = datetime.strptime(task.get("task_start_time"), DATETIME_FORMAT)
+                    duration = int(task.get("task_duration", 0))
+                    end_dt = start_dt + timedelta(minutes=duration)
+                    end_time_str = end_dt.strftime(DATETIME_FORMAT)
+                    
+                    # 保存计算的 end_time
+                    await db[FIXED_TASK_COLLECTION].update_one(
+                        {"_id": task["_id"]},
+                        {"$set": {"task_end_time": end_time_str}}
+                    )
+                except Exception as e:
+                    print(f"  ⚠️ Error calculating end_time for {task_name}: {e}")
+                    continue
+            
+            if not end_time_str:
+                continue
+            
+            try:
+                end_dt = datetime.strptime(end_time_str, DATETIME_FORMAT)
+                
+                # 如果当前时间已经过了任务结束时间
+                if now >= end_dt:
+                    result = await db[FIXED_TASK_COLLECTION].update_one(
+                        {"_id": task["_id"]},
+                        {
+                            "$set": {
+                                "status": "completed",
+                                "completed_at": now.strftime(DATETIME_FORMAT)
+                            }
+                        }
+                    )
+                    
+                    if result.modified_count > 0:
+                        completed_count += 1
+                        print(f"  ✅ Auto-completed fixed task: {task_name} (ended at {end_time_str})")
+                
+            except Exception as e:
+                print(f"  ⚠️ Error processing fixed task {task_name}: {e}")
+                continue
+        
+        print(f"✅ Completion check done: {completed_count} tasks auto-completed\n")
+        
+        return {
+            "success": True,
+            "checked_tasks": len(flex_tasks) + len(fixed_tasks),
+            "completed_tasks": completed_count,
+            "message": f"Auto-completed {completed_count} tasks",
+            "timestamp": now.strftime(DATETIME_FORMAT)
+        }
+    
+    except Exception as e:
+        print(f"❌ Error in check_and_complete_tasks: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/manual-complete/{task_id}")
+async def manual_complete_task(task_id: str, task_type: str = None):
+    """
+    手动标记任务为完成
+    task_type: "fixed" 或 "flex"
+    """
+    if task_type not in ["fixed", "flex"]:
+        raise HTTPException(status_code=400, detail="task_type is required (fixed or flex)")
+    
+    try:
+        now = datetime.now()
+        current_time = now.strftime(DATETIME_FORMAT)
+        
+        collection = FIXED_TASK_COLLECTION if task_type == "fixed" else FLEXIBLE_TASK_COLLECTION
+        
+        # 更新任务状态为 completed
+        result = await db[collection].update_one(
+            {"_id": ObjectId(task_id)},
+            {
+                "$set": {
+                    "status": "completed",
+                    "completed_at": current_time
+                }
+            }
+        )
+        
+        if result.modified_count > 0:
+            print(f"✅ Manually completed {task_type} task {task_id}")
+            return {
+                "success": True,
+                "task_id": task_id,
+                "message": "Task marked as completed",
+                "completed_at": current_time
+            }
+        else:
+            raise HTTPException(status_code=404, detail="Task not found or already completed")
+    
+    except Exception as e:
+        print(f"❌ Error in manual_complete_task: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/batch-complete")
+async def batch_complete_tasks(task_ids: list[str], task_types: list[str]):
+    """
+    批量标记任务为完成
+    task_ids: 任务 ID 列表
+    task_types: 对应的任务类型列表 ["fixed", "flex", ...]
+    """
+    if len(task_ids) != len(task_types):
+        raise HTTPException(status_code=400, detail="task_ids and task_types must have same length")
+    
+    try:
+        now = datetime.now()
+        current_time = now.strftime(DATETIME_FORMAT)
+        
+        completed_count = 0
+        
+        for task_id, task_type in zip(task_ids, task_types):
+            if task_type not in ["fixed", "flex"]:
+                continue
+            
+            collection = FIXED_TASK_COLLECTION if task_type == "fixed" else FLEXIBLE_TASK_COLLECTION
+            
+            result = await db[collection].update_one(
+                {"_id": ObjectId(task_id)},
+                {
+                    "$set": {
+                        "status": "completed",
+                        "completed_at": current_time
+                    }
+                }
+            )
+            
+            if result.modified_count > 0:
+                completed_count += 1
+        
+        print(f"✅ Batch completed {completed_count}/{len(task_ids)} tasks")
+        
+        return {
+            "success": True,
+            "completed_count": completed_count,
+            "total_count": len(task_ids),
+            "message": f"Completed {completed_count} out of {len(task_ids)} tasks"
+        }
+    
+    except Exception as e:
+        print(f"❌ Error in batch_complete_tasks: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+    
+@router.get("/{user_id}/all")
+async def get_all_tasks(user_id: str):
+    """
+    获取用户的所有任务（不按日期过滤）
+    用于dashboard等需要查看所有任务的场景
+    """
+    try:
+        query = make_user_query(user_id)
+        now = datetime.now()
+        
+        print(f"\n📊 Loading ALL tasks for dashboard - user {user_id}")
+        
+        # 获取所有任务，不进行日期过滤
+        fixed_tasks = await db[FIXED_TASK_COLLECTION].find(query).to_list(None)
+        flex_tasks = await db[FLEXIBLE_TASK_COLLECTION].find(query).to_list(None)
+        
+        # 转换 ObjectId 为字符串
+        for t in fixed_tasks + flex_tasks:
+            t["_id"] = str(t["_id"])
+            t["id"] = t["_id"]
+            if "predicted_energy" not in t:
+                t["predicted_energy"] = None
+            if "predicted_pressure" not in t:
+                t["predicted_pressure"] = None
+        
+        print(f"📊 Dashboard: {len(fixed_tasks)} fixed, {len(flex_tasks)} flexible tasks")
+        
+        return {
+            "fixed": fixed_tasks,
+            "flexible": flex_tasks,
+            "ai_predictions": True,
+            "is_today_view": False,
+            "total_count": len(fixed_tasks) + len(flex_tasks)
+        }
+    except Exception as e:
+        print(f"❌ Error loading all tasks: {e}")
         raise HTTPException(status_code=500, detail=str(e))
