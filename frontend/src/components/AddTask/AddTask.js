@@ -102,7 +102,7 @@ export default function AddTask({
       difficulty: parseInt(task.difficulty) || 3,
     };
 
-    onConfirm({ ...taskPayload, id: task.id || Date.now() });
+    onConfirm({ ...taskPayload, id: editingTask?.id || task.id || Date.now() });
     onClose();
   };
 

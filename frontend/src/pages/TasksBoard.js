@@ -6,6 +6,7 @@ import {
   getTasks,
   createTask,
   deleteTask,
+  updateTask,
   updateTaskStatus,
   runScheduler,
 } from "../services/api";
@@ -140,16 +141,24 @@ export default function TasksBoard() {
   }, []);
 
   const handleConfirm = async (task) => {
-    try {
+  try {
+    if (editingTask?.id) {
+      // ✅ 编辑模式：更新任务
+      const type = task.mode === "flexible" ? "flex" : "fixed";
+      await updateTask(editingTask.id, type, task);
+    } else {
+      // ✅ 新建模式：创建任务
       await createTask(userId, task);
-      await fetchTasks();
-    } catch (err) {
-      console.error("❌ Failed to add task:", err);
-    } finally {
-      setOpen(false);
-      setEditingTask(null);
     }
-  };
+    await fetchTasks();
+  } catch (err) {
+    console.error("❌ Failed to add/update task:", err);
+  } finally {
+    setOpen(false);
+    setEditingTask(null);
+  }
+};
+
 
   const handleDelete = async (id, type) => {
     try {
