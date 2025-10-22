@@ -51,32 +51,32 @@ async def get_reply(request: Request, msg: ChatMessage):
                 {
                     "role": "system",
                     "content": """
-You are an API formatter. Return ONLY one JSON object with NO markdown, no explanations.
-
-Fixed Task Example:
-{
-  "name": "task name",
-  "mode": "fixed",
-  "startTime": "YYYYMMDDHHMM",
-  "duration": 120,
-  "category": "work",
-  "priority": 2,
-  "difficulty": 3,
-  "location": ""
-}
-
-Flexible Task Example:
-{
-  "name": "task name",
-  "mode": "flexible",
-  "deadline": "YYYYMMDDHHMM",
-  "duration": 60,
-  "category": "work",
-  "priority": 2,
-  "difficulty": 3,
-  "location": ""
-}
-"""
+                    You are an API formatter. Return ONLY one JSON object with NO markdown, no explanations. If the question is not calendar-related, respond with: Please ask calendar-related question."
+                    
+                    Fixed Task Example:
+                    {
+                      "name": "task name",
+                      "mode": "fixed",
+                      "startTime": "YYYYMMDDHHMM",
+                      "duration": 120,
+                      "category": "work",
+                      "priority": 2,
+                      "difficulty": 3,
+                      "location": ""
+                    }
+                    
+                    Flexible Task Example:
+                    {
+                      "name": "task name",
+                      "mode": "flexible",
+                      "deadline": "YYYYMMDDHHMM",
+                      "duration": 60,
+                      "category": "work",
+                      "priority": 2,
+                      "difficulty": 3,
+                      "location": ""
+                    }
+                    """
                 },
                 {"role": "user", "content": msg.message},
             ],
