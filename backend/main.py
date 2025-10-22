@@ -1,9 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-
-from routers import users
-from routers import users, login, tasks, scheduler,chatbot  
-
+from routers import users, login, tasks, scheduler, chatbot, stats_recording
 
 app = FastAPI(title="AI Scheduling System")
 app.add_middleware(
@@ -15,14 +12,15 @@ app.add_middleware(
 )
 
 app.include_router(users.router)
-app.include_router(login.router)      
+app.include_router(login.router)       
 app.include_router(tasks.router)
 app.include_router(scheduler.router)
 app.include_router(chatbot.router)
 
+
+app.include_router(stats_recording.router)
+
+
 @app.get("/")
 async def root():
     return {"message": "Welcome to AI Scheduling System!"}
-
-
-
