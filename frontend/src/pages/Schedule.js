@@ -122,7 +122,7 @@ export default function Schedule({ refreshFlag }) {
     if (!userId) return;
     try {
       console.log("🔄 Fetching tasks from DB for user:", userId);
-      const res = await getTasks(userId);
+      const res = await getTasks(`${userId}/all`);
       const fixedRaw = res?.data?.fixed || [];
       const flexibleRaw = res?.data?.flexible || [];
 
