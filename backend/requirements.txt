@@ -3,3 +3,8 @@ uvicorn
 motor
 python-dotenv
 pydantic
+numpy
+joblib
+scikit-learn
+transformers
+torch
