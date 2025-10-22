@@ -11,7 +11,7 @@ from schemas import UserStats # 假設 UserStats 在 schemas.py 中
 
 # --- 常數定義 ---
 USER_STATS_COLLECTION = "user_stats"
-DATETIME_FORMAT = "%Y%m%d%H%M" # 根據您的原版檔案
+DATETIME_FORMAT = "%Y%m%d%H%M" 
 SECRET_KEY = os.getenv("SECRET_KEY", "Ez61AEU4tKk48k3Au5L8Yy27ze7MI8a5-Qia_X4Dkh0")
 ALGORITHM = "HS256"
 
