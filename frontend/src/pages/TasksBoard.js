@@ -99,7 +99,7 @@ export default function TasksBoard() {
   const fetchTasks = async () => {
     if (!userId) return;
     try {
-      const res = await getTasks(userId);
+      const res = await getTasks(`${userId}?show_all=false`);
       const fixedRaw = res?.data?.fixed || [];
       const flexRaw = res?.data?.flexible || [];
       const fixed = fixedRaw.map((d) => normalizeTask(d, "fixed"));
