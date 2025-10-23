@@ -35,8 +35,6 @@ const formatBarData = (dailyStats) => {
 
 /**
  * 獲取給定日期所在週的範圍（週一到週日）
- * @param {Date} date - 任意日期
- * @returns {Object} {startDate, endDate} - 格式為 "YYYY-MM-DD"
  */
 const getWeekRange = (date = new Date()) => {
   const start = new Date(date);
@@ -53,23 +51,34 @@ const getWeekRange = (date = new Date()) => {
   };
 };
 
+/**
+ * 計算動態 y 軸範圍（根據最大最小值 + 額外 padding）
+ */
+const calcDomain = (data) => {
+  if (!data || data.length === 0) return [0, 5];
+  const values = data.map(p => p.value);
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const diff = max - min || 1;
+  const padding = diff * 0.2; // 可調整 0.3 或 0.4
+  const yMin = Math.max(0, min - padding);
+  const yMax = Math.min(5, max + padding);
+  return [yMin, yMax];
+};
+
 export default function WeeklyReport() {
-  // 數據狀態
   const [weeklyTasks, setWeeklyTasks] = useState([]);
   const [timeDist, setTimeDist] = useState([]);
   const [avgEnergy, setAvgEnergy] = useState([]);
   const [avgPressure, setAvgPressure] = useState([]);
   const [summaryData, setSummaryData] = useState({});
 
-  // UI 狀態
   const [weekRange, setWeekRange] = useState(getWeekRange());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // ✅ 從 localStorage 獲取 user_id（用於調試）
   const userId = localStorage.getItem("user_id");
 
-  // 當週範圍變化時，重新獲取數據
   useEffect(() => {
     const fetchReport = async () => {
       setLoading(true);
@@ -79,13 +88,11 @@ export default function WeeklyReport() {
         console.log(`📊 Fetching weekly report for ${weekRange.startDate} to ${weekRange.endDate}`);
         console.log(`👤 User ID: ${userId}`);
         
-        // ✅ API 會自動從 localStorage 獲取 user_id
         const response = await getWeeklyStats(weekRange.startDate, weekRange.endDate);
         const data = response.data;
 
         console.log("📊 Weekly report data:", data);
 
-        // 更新所有狀態
         setWeeklyTasks(formatBarData(data.daily_stats));
         setTimeDist(formatPieData(data.tasks_by_type));
         setAvgEnergy(data.avg_energy_data || []);
@@ -99,8 +106,6 @@ export default function WeeklyReport() {
       } catch (err) {
         setError("Could not load report data. Please try again later.");
         console.error("❌ Error fetching weekly report:", err);
-        
-        // 如果是認證錯誤，提示用戶重新登入
         if (err.response && err.response.status === 401) {
           setError("Session expired. Please log in again.");
         }
@@ -110,18 +115,17 @@ export default function WeeklyReport() {
     };
 
     fetchReport();
-  }, [weekRange]); // 當 weekRange 改變時重新執行
+  }, [weekRange]);
 
-  /**
-   * 處理日期選擇器變化
-   * 用戶選擇的任意日期會自動計算出該週的範圍
-   */
   const handleDateChange = (e) => {
     const newDate = e.target.valueAsDate || new Date(e.target.value + 'T00:00:00');
     setWeekRange(getWeekRange(newDate));
   };
-  
-  // 載入中狀態
+
+  // 計算動態 y 軸範圍
+  const energyDomain = calcDomain(avgEnergy);
+  const pressureDomain = calcDomain(avgPressure);
+
   if (loading) {
     return (
       <div style={{ padding: "20px", textAlign: "center" }}>
@@ -129,8 +133,7 @@ export default function WeeklyReport() {
       </div>
     );
   }
-  
-  // 錯誤狀態
+
   if (error) {
     return (
       <div style={{ padding: "20px", textAlign: "center", color: "red" }}>
@@ -145,7 +148,6 @@ export default function WeeklyReport() {
     );
   }
 
-  // 主要渲染
   return (
     <div style={{ padding: "20px" }}>
       <h2>Weekly Report</h2>
@@ -182,20 +184,11 @@ export default function WeeklyReport() {
         <h3 style={{ marginTop: 0 }}>Weekly Summary</h3>
         <div style={{ display: "flex", gap: "30px" }}>
           <div>
-            <p style={{ margin: "5px 0" }}>
-              <strong>Total Tasks:</strong> {summaryData.total || 0}
-            </p>
-            <p style={{ margin: "5px 0" }}>
-              <strong>Completed Tasks:</strong> {summaryData.completed || 0}
-            </p>
+            <p><strong>Total Tasks:</strong> {summaryData.total || 0}</p>
+            <p><strong>Completed Tasks:</strong> {summaryData.completed || 0}</p>
           </div>
           <div>
-            <p style={{ margin: "5px 0" }}>
-              <strong>Completion Rate:</strong>{" "}
-              {summaryData.rate 
-                ? (summaryData.rate * 100).toFixed(1) + "%" 
-                : "N/A"}
-            </p>
+            <p><strong>Completion Rate:</strong> {summaryData.rate ? (summaryData.rate * 100).toFixed(1) + "%" : "N/A"}</p>
           </div>
         </div>
       </div>
@@ -226,7 +219,6 @@ export default function WeeklyReport() {
                 cx="50%"
                 cy="50%"
                 outerRadius={100}
-                fill="#8884d8"
                 dataKey="value"
                 label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
               >
@@ -249,11 +241,11 @@ export default function WeeklyReport() {
       <div>
         <h3>Energy & Pressure Trends</h3>
         <div style={{ display: "flex", gap: "20px" }}>
-          <ResponsiveContainer width="50%" height={200}>
+          <ResponsiveContainer width="50%" height={220}>
             <LineChart data={avgEnergy}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="day" />
-              <YAxis domain={[0, 5]} />
+              <YAxis domain={energyDomain} />
               <Tooltip />
               <Legend />
               <Line 
@@ -262,15 +254,16 @@ export default function WeeklyReport() {
                 dataKey="value" 
                 stroke="#1976d2" 
                 strokeWidth={2}
+                animationDuration={800}
               />
             </LineChart>
           </ResponsiveContainer>
 
-          <ResponsiveContainer width="50%" height={200}>
+          <ResponsiveContainer width="50%" height={220}>
             <LineChart data={avgPressure}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="day" />
-              <YAxis domain={[0, 5]} />
+              <YAxis domain={pressureDomain} />
               <Tooltip />
               <Legend />
               <Line 
@@ -279,6 +272,7 @@ export default function WeeklyReport() {
                 dataKey="value" 
                 stroke="#f44336" 
                 strokeWidth={2}
+                animationDuration={800}
               />
             </LineChart>
           </ResponsiveContainer>
