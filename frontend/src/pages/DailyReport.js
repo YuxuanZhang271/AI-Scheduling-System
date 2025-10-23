@@ -3,85 +3,97 @@ import {
   PieChart, Pie, Cell,
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from "recharts";
-// Step 1: Import the API function
 import { getDailyStats } from "../services/api";
 
 const COLORS = ["#1976d2", "#ff9800", "#4caf50", "#f44336"];
 
-// --- Helper Functions ---
-// Gets today's date in "YYYY-MM-DD" format
 const getTodayString = () => {
   return new Date().toISOString().split('T')[0];
 }
 
-// Converts backend data {work: 2} to chart data [{name: 'work', value: 2}]
 const formatPieData = (tasksByType) => {
   if (!tasksByType) return [];
   return Object.entries(tasksByType)
-    .filter(([, value]) => value > 0) // Only show categories that have tasks
+    .filter(([, value]) => value > 0)
     .map(([name, value]) => ({ name, value }));
 };
 
-
 export default function DailyReport() {
-  // Step 2: Create state to hold data from the API
   const [pieData, setPieData] = useState([]);
   const [energyData, setEnergyData] = useState([]);
   const [pressureData, setPressureData] = useState([]);
-  const [summaryData, setSummaryData] = useState({ total: 0, completed: 0 });
+  const [summaryData, setSummaryData] = useState({ total: 0, completed: 0, rate: 0 });
   
   const [selectedDate, setSelectedDate] = useState(getTodayString());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Step 3: Fetch data when the component loads or the date changes
+  const userId = localStorage.getItem("user_id");
+
   useEffect(() => {
     const fetchReport = async () => {
       setLoading(true);
       setError(null);
       try {
-        // Call the API
-        const response = await getDailyStats(selectedDate);
+        console.log(`📊 Fetching daily report for ${selectedDate}`);
+        console.log(`👤 User ID: ${userId}`);
         
-        // **This is the critical fix:** We must get the data from 'response.data'
-        const data = response.data; 
+        // ✅ API 會自動從 localStorage 獲取 user_id
+        const response = await getDailyStats(selectedDate);
+        const data = response.data;
 
-        // Update all our states with the data from the API
+        console.log('📊 Daily report data:', data);
+
         setPieData(formatPieData(data.tasks_by_type));
         setEnergyData(data.energy_data || []);
         setPressureData(data.pressure_data || []);
         setSummaryData({ 
           total: data.total_tasks, 
-          completed: data.completed_tasks 
+          completed: data.completed_tasks,
+          rate: data.completion_rate
         });
         
       } catch (err) {
-        // If the API call fails, set the error message
         setError("Could not load report data. Please try again later."); 
-        console.error("Error fetching daily report:", err);
+        console.error("❌ Error fetching daily report:", err);
+        
+        if (err.response && err.response.status === 401) {
+          setError("Session expired. Please log in again.");
+        }
       } finally {
-        // Stop loading
         setLoading(false);
       }
     };
 
     fetchReport();
-  }, [selectedDate]); // This code re-runs when the user picks a new date
+  }, [selectedDate]);
 
-  // Step 4: Show loading or error messages
   if (loading) {
-    return <div style={{ padding: "20px", textAlign: "center" }}>Loading Report...</div>;
+    return (
+      <div style={{ padding: "20px", textAlign: "center" }}>
+        <div style={{ fontSize: "18px", color: "#666" }}>Loading Report...</div>
+      </div>
+    );
   }
+  
   if (error) {
-    return <div style={{ padding: "20px", textAlign: "center", color: "red" }}>{error}</div>;
+    return (
+      <div style={{ padding: "20px", textAlign: "center", color: "red" }}>
+        <div style={{ fontSize: "18px" }}>{error}</div>
+        <button 
+          onClick={() => window.location.reload()} 
+          style={{ marginTop: "10px", padding: "8px 16px", cursor: "pointer" }}
+        >
+          Retry
+        </button>
+      </div>
+    );
   }
 
-  // Step 5: Render the report with the data
   return (
     <div style={{ padding: "20px" }}>
-      <h2>Daily Report</h2>
+      <h2>Daily Report - {selectedDate}</h2>
 
-      {/* Date Picker */}
       <div style={{ margin: "20px 0" }}>
         <label htmlFor="report-date" style={{ marginRight: "10px" }}>Select Date:</label>
         <input
@@ -93,65 +105,82 @@ export default function DailyReport() {
         />
       </div>
 
-      {/* Task Pie Chart & Summary */}
-      <div style={{ display: "flex", gap: "20px", alignItems: "center" }}>
-        <ResponsiveContainer width="50%" height={250}>
-          <PieChart>
-            <Pie
-              data={pieData}
-              cx="50%"
-              cy="50%"
-              labelLine={false}
-              outerRadius={100}
-              fill="#8884d8"
-              dataKey="value"
-              // Add percentage label to the chart
-              label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-            >
-              {pieData.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-              ))}
-            </Pie>
-            <Tooltip />
-            <Legend />
-          </PieChart>
-        </ResponsiveContainer>
-
-        <div style={{ flex: 1 }}>
-          <h3>Task Status Summary</h3>
-          {/* This part now shows the summary data */}
-          <p>Total Tasks: {summaryData.total}</p>
-          <p>Completed Tasks: {summaryData.completed}</p>
-          <p>Completion Rate: {summaryData.total > 0 
-            ? ((summaryData.completed / summaryData.total) * 100).toFixed(1) + "%" 
-            : "N/A"}
+      <div style={{ 
+        background: "#f9f9f9", 
+        padding: "15px", 
+        borderRadius: "8px", 
+        marginBottom: "20px",
+        border: "1px solid #e0e0e0"
+      }}>
+        <h3 style={{ marginTop: 0 }}>Task Status Summary</h3>
+        <div style={{ display: "flex", gap: "30px" }}>
+          <p style={{ margin: "5px 0" }}>
+            <strong>Total Tasks:</strong> {summaryData.total}
+          </p>
+          <p style={{ margin: "5px 0" }}>
+            <strong>Completed Tasks:</strong> {summaryData.completed}
+          </p>
+          <p style={{ margin: "5px 0" }}>
+            <strong>Completion Rate:</strong> {summaryData.rate}%
           </p>
         </div>
       </div>
 
-      {/* Energy & Pressure Line Charts */}
-      <div style={{ display: "flex", gap: "20px", marginTop: "20px" }}>
-        <ResponsiveContainer width="50%" height={200}>
-          <LineChart data={energyData}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="time" />
-            <YAxis />
-            <Tooltip />
-            <Legend />
-            <Line name="Energy" type="monotone" dataKey="value" stroke="#1976d2" />
-          </LineChart>
-        </ResponsiveContainer>
+      <div style={{ marginBottom: "30px" }}>
+        <h3>Task Type Distribution</h3>
+        {pieData.length > 0 ? (
+          <ResponsiveContainer width="100%" height={250}>
+            <PieChart>
+              <Pie
+                data={pieData}
+                cx="50%"
+                cy="50%"
+                labelLine={false}
+                outerRadius={100}
+                fill="#8884d8"
+                dataKey="value"
+                label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+              >
+                {pieData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                ))}
+              </Pie>
+              <Tooltip />
+              <Legend />
+            </PieChart>
+          </ResponsiveContainer>
+        ) : (
+          <div style={{ textAlign: "center", padding: "20px", color: "#999" }}>
+            No task data available for this date
+          </div>
+        )}
+      </div>
 
-        <ResponsiveContainer width="50%" height={200}>
-          <LineChart data={pressureData}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="time" />
-            <YAxis />
-            <Tooltip />
-            <Legend />
-            <Line name="Pressure" type="monotone" dataKey="value" stroke="#f44336" />
-          </LineChart>
-        </ResponsiveContainer>
+      <div>
+        <h3>Energy & Pressure Throughout the Day</h3>
+        <div style={{ display: "flex", gap: "20px" }}>
+          <ResponsiveContainer width="50%" height={200}>
+            <LineChart data={energyData}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="time" />
+              <YAxis domain={[0, 5]} />
+              <Tooltip />
+              <Legend />
+              <Line name="Energy" type="monotone" dataKey="value" stroke="#1976d2" strokeWidth={2} />
+            </LineChart>
+          </ResponsiveContainer>
+
+          <ResponsiveContainer width="50%" height={200}>
+            <LineChart data={pressureData}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="time" />
+              <YAxis domain={[0, 5]} />
+              <Tooltip />
+              <Legend />
+              <Line name="Pressure" type="monotone" dataKey="value" stroke="#f44336" strokeWidth={2} />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
       </div>
     </div>
   );
