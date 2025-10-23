@@ -7,9 +7,7 @@ import { getDailyStats } from "../services/api";
 
 const COLORS = ["#1976d2", "#ff9800", "#4caf50", "#f44336"];
 
-const getTodayString = () => {
-  return new Date().toISOString().split('T')[0];
-}
+const getTodayString = () => new Date().toISOString().split('T')[0];
 
 const formatPieData = (tasksByType) => {
   if (!tasksByType) return [];
@@ -23,7 +21,6 @@ export default function DailyReport() {
   const [energyData, setEnergyData] = useState([]);
   const [pressureData, setPressureData] = useState([]);
   const [summaryData, setSummaryData] = useState({ total: 0, completed: 0, rate: 0 });
-  
   const [selectedDate, setSelectedDate] = useState(getTodayString());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -35,14 +32,8 @@ export default function DailyReport() {
       setLoading(true);
       setError(null);
       try {
-        console.log(`📊 Fetching daily report for ${selectedDate}`);
-        console.log(`👤 User ID: ${userId}`);
-        
-        // ✅ API 會自動從 localStorage 獲取 user_id
         const response = await getDailyStats(selectedDate);
         const data = response.data;
-
-        console.log('📊 Daily report data:', data);
 
         setPieData(formatPieData(data.tasks_by_type));
         setEnergyData(data.energy_data || []);
@@ -52,11 +43,8 @@ export default function DailyReport() {
           completed: data.completed_tasks,
           rate: data.completion_rate
         });
-        
       } catch (err) {
         setError("Could not load report data. Please try again later."); 
-        console.error("❌ Error fetching daily report:", err);
-        
         if (err.response && err.response.status === 401) {
           setError("Session expired. Please log in again.");
         }
@@ -64,31 +52,32 @@ export default function DailyReport() {
         setLoading(false);
       }
     };
-
     fetchReport();
   }, [selectedDate]);
 
-  if (loading) {
-    return (
-      <div style={{ padding: "20px", textAlign: "center" }}>
-        <div style={{ fontSize: "18px", color: "#666" }}>Loading Report...</div>
-      </div>
-    );
-  }
-  
-  if (error) {
-    return (
-      <div style={{ padding: "20px", textAlign: "center", color: "red" }}>
-        <div style={{ fontSize: "18px" }}>{error}</div>
-        <button 
-          onClick={() => window.location.reload()} 
-          style={{ marginTop: "10px", padding: "8px 16px", cursor: "pointer" }}
-        >
-          Retry
-        </button>
-      </div>
-    );
-  }
+  // --- 动态范围计算函数 ---
+  const calcDomain = (data) => {
+    if (!data || data.length === 0) return [0, 5];
+    const values = data.map(p => p.value);
+    const min = Math.min(...values);
+    const max = Math.max(...values);
+    const diff = max - min || 1; // 避免除零
+    const padding = diff * 0.2; // 上下各加 20%
+    const yMin = Math.max(0, min - padding);
+    const yMax = Math.min(5, max + padding);
+    return [yMin, yMax];
+  };
+
+  const energyDomain = calcDomain(energyData);
+  const pressureDomain = calcDomain(pressureData);
+
+  if (loading) return <div style={{ padding: 20, textAlign: "center" }}>Loading Report...</div>;
+  if (error) return (
+    <div style={{ padding: 20, textAlign: "center", color: "red" }}>
+      <div>{error}</div>
+      <button onClick={() => window.location.reload()} style={{ marginTop: 10, padding: "8px 16px" }}>Retry</button>
+    </div>
+  );
 
   return (
     <div style={{ padding: "20px" }}>
@@ -105,27 +94,17 @@ export default function DailyReport() {
         />
       </div>
 
-      <div style={{ 
-        background: "#f9f9f9", 
-        padding: "15px", 
-        borderRadius: "8px", 
-        marginBottom: "20px",
-        border: "1px solid #e0e0e0"
-      }}>
-        <h3 style={{ marginTop: 0 }}>Task Status Summary</h3>
+      {/* --- 任务汇总 --- */}
+      <div style={{ background: "#f9f9f9", padding: "15px", borderRadius: "8px", marginBottom: "20px", border: "1px solid #e0e0e0" }}>
+        <h3>Task Status Summary</h3>
         <div style={{ display: "flex", gap: "30px" }}>
-          <p style={{ margin: "5px 0" }}>
-            <strong>Total Tasks:</strong> {summaryData.total}
-          </p>
-          <p style={{ margin: "5px 0" }}>
-            <strong>Completed Tasks:</strong> {summaryData.completed}
-          </p>
-          <p style={{ margin: "5px 0" }}>
-            <strong>Completion Rate:</strong> {summaryData.rate}%
-          </p>
+          <p><strong>Total:</strong> {summaryData.total}</p>
+          <p><strong>Completed:</strong> {summaryData.completed}</p>
+          <p><strong>Rate:</strong> {summaryData.rate}%</p>
         </div>
       </div>
 
+      {/* --- 饼图 --- */}
       <div style={{ marginBottom: "30px" }}>
         <h3>Task Type Distribution</h3>
         {pieData.length > 0 ? (
@@ -135,52 +114,45 @@ export default function DailyReport() {
                 data={pieData}
                 cx="50%"
                 cy="50%"
-                labelLine={false}
                 outerRadius={100}
-                fill="#8884d8"
                 dataKey="value"
                 label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
               >
-                {pieData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                ))}
+                {pieData.map((entry, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
               </Pie>
               <Tooltip />
               <Legend />
             </PieChart>
           </ResponsiveContainer>
         ) : (
-          <div style={{ textAlign: "center", padding: "20px", color: "#999" }}>
-            No task data available for this date
-          </div>
+          <div style={{ textAlign: "center", padding: "20px", color: "#999" }}>No task data available</div>
         )}
       </div>
 
-      <div>
-        <h3>Energy & Pressure Throughout the Day</h3>
-        <div style={{ display: "flex", gap: "20px" }}>
-          <ResponsiveContainer width="50%" height={200}>
-            <LineChart data={energyData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="time" />
-              <YAxis domain={[0, 5]} />
-              <Tooltip />
-              <Legend />
-              <Line name="Energy" type="monotone" dataKey="value" stroke="#1976d2" strokeWidth={2} />
-            </LineChart>
-          </ResponsiveContainer>
+      {/* --- 能量/压力折线 --- */}
+      <h3>Energy & Pressure Throughout the Day</h3>
+      <div style={{ display: "flex", gap: "20px" }}>
+        <ResponsiveContainer width="50%" height={220}>
+          <LineChart data={energyData}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="time" />
+            <YAxis domain={energyDomain} />
+            <Tooltip />
+            <Legend />
+            <Line type="monotone" dataKey="value" name="Energy" stroke="#1976d2" strokeWidth={2} />
+          </LineChart>
+        </ResponsiveContainer>
 
-          <ResponsiveContainer width="50%" height={200}>
-            <LineChart data={pressureData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="time" />
-              <YAxis domain={[0, 5]} />
-              <Tooltip />
-              <Legend />
-              <Line name="Pressure" type="monotone" dataKey="value" stroke="#f44336" strokeWidth={2} />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
+        <ResponsiveContainer width="50%" height={220}>
+          <LineChart data={pressureData}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="time" />
+            <YAxis domain={pressureDomain} />
+            <Tooltip />
+            <Legend />
+            <Line type="monotone" dataKey="value" name="Pressure" stroke="#f44336" strokeWidth={2} />
+          </LineChart>
+        </ResponsiveContainer>
       </div>
     </div>
   );
