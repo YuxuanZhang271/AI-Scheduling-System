@@ -94,18 +94,75 @@ export const runScheduler = (userId) =>
   apiClient.post(`/scheduler/run/${userId}`);
 
 // -------------------- 報表接口 --------------------
-// 這些函式現在會由 apiClient 自動帶上 token
+/**
+ * 獲取每日統計報告
+ * @param {string} date - 日期 "YYYY-MM-DD"
+ * @returns {Promise} 包含每日統計數據
+ */
 export const getDailyStats = (date) => {
+  // ✅ 從 localStorage 獲取 user_id
+  const userId = localStorage.getItem("user_id");
+  
+  if (!userId) {
+    console.error("❌ user_id not found in localStorage");
+    return Promise.reject(new Error("User not logged in"));
+  }
+  
   return apiClient.get("/stats/daily", {
-    params: { date },
+    params: { 
+      date,
+      user_id: userId  // ✅ 添加 user_id 參數
+    },
   });
 };
 
+/**
+ * 獲取每週統計報告
+ * @param {string} startDate - 開始日期 "YYYY-MM-DD"
+ * @param {string} endDate - 結束日期 "YYYY-MM-DD"
+ * @returns {Promise} 包含每週統計數據
+ */
 export const getWeeklyStats = (startDate, endDate) => {
+  // ✅ 從 localStorage 獲取 user_id
+  const userId = localStorage.getItem("user_id");
+  
+  if (!userId) {
+    console.error("❌ user_id not found in localStorage");
+    return Promise.reject(new Error("User not logged in"));
+  }
+  
   return apiClient.get("/stats/weekly", {
     params: {
       start_date: startDate,
       end_date: endDate,
+      user_id: userId  // ✅ 添加 user_id 參數
     },
   });
 };
+
+/**
+ * 記錄用戶狀態（能量和壓力）
+ * @param {string} timestamp - 時間戳 "YYYYMMDDHHMM"
+ * @param {number} energy - 能量值 (0-5)
+ * @param {number} pressure - 壓力值 (0-5)
+ * @returns {Promise}
+ */
+export const recordCondition = (timestamp, energy, pressure) => {
+  const userId = localStorage.getItem("user_id");
+  
+  if (!userId) {
+    console.error("❌ user_id not found in localStorage");
+    return Promise.reject(new Error("User not logged in"));
+  }
+  
+  return apiClient.post("/stats/record", null, {
+    params: {
+      user_id: userId,
+      timestamp,
+      energy,
+      pressure
+    },
+  });
+};
+
+export default apiClient;
