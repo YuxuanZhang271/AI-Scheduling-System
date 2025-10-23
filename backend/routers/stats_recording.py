@@ -1,7 +1,7 @@
-# stats_recording.py
+# ==================== stats_recording.py ====================
 import datetime as dt
 from fastapi import APIRouter, HTTPException, Query
-from typing import Dict, List, Optional
+from typing import Dict, List
 from database import db
 from models import FIXED_TASK_COLLECTION, FLEXIBLE_TASK_COLLECTION
 from bson import ObjectId
@@ -9,12 +9,29 @@ from bson import ObjectId
 router = APIRouter(prefix="/stats", tags=["Statistics & Recording"])
 DATETIME_FORMAT = "%Y%m%d%H%M"
 
-def _is_same_day(yyyymmddhhmm: str, yyyymmdd: str) -> bool:
-    return isinstance(yyyymmddhhmm, str) and len(yyyymmddhhmm) >= 8 and yyyymmddhhmm[:8] == yyyymmdd
+# ✅ 恢复率配置（基于任务类型）
+RECOVERY_RATES = {
+    "food": {
+        "energy_per_hour": 0.8,      # 吃饭后每小时恢复 0.8 能量
+        "pressure_per_hour": -0.5    # 吃饭后每小时降低 0.5 压力
+    },
+    "fun": {
+        "energy_per_hour": 0.6,      # 娱乐后恢复较慢
+        "pressure_per_hour": -0.8    # 但压力降低很快
+    },
+    "work": {
+        "energy_per_hour": 0.4,      # 工作后恢复慢
+        "pressure_per_hour": -0.2    # 压力降低也慢
+    },
+    "default": {
+        "energy_per_hour": 0.5,      # 默认恢复率
+        "pressure_per_hour": -0.3
+    }
+}
 
 
 def normalize_time(value):
-    """统一时间字段转字符串"""
+    """统一时间字段转字符串 YYYYMMDDHHMM"""
     if isinstance(value, dt.datetime):
         return value.strftime("%Y%m%d%H%M")
     elif isinstance(value, (int, float)):
@@ -38,24 +55,130 @@ def make_user_query(user_id: str):
         ]}
 
 
+def calculate_energy_pressure_timeline(tasks: list, start_hour: int = 8, end_hour: int = 20):
+    """
+    根据任务列表计算一天中每个时间点的能量和压力
+    
+    核心逻辑：
+    1. 初始状态（8:00）：能量=5.0, 压力=0.0
+    2. 任务执行：
+       - 能量消耗 = predicted_energy（模型预测的 energy_loss）
+       - 压力增加 = predicted_pressure（模型预测的 pressure_increase）
+    3. 休息恢复：
+       - 根据上一个任务的类型，应用不同的恢复率
+       - 能量恢复 = energy_per_hour × 休息小时数
+       - 压力降低 = pressure_per_hour × 休息小时数
+    
+    Args:
+        tasks: 任务列表，需包含：
+            - start_time (str): "YYYYMMDDHHMM"
+            - duration (int): 分钟数
+            - predicted_energy (float): AI 预测的能量消耗
+            - predicted_pressure (float): AI 预测的压力增加
+            - task_type (str): "food"/"fun"/"work"
+        start_hour: 开始时间（默认 8:00）
+        end_hour: 结束时间（默认 20:00）
+        
+    Returns:
+        {
+            "energy_data": [{"time": "08:00", "value": 5.0}, ...],
+            "pressure_data": [{"time": "08:00", "value": 0.0}, ...]
+        }
+    """
+    # 初始化：早上满能量，无压力
+    current_energy = 5.0
+    current_pressure = 0.0
+    
+    energy_timeline = []
+    pressure_timeline = []
+    
+    # 按开始时间排序任务
+    sorted_tasks = sorted(
+        [t for t in tasks if t.get("start_time")],
+        key=lambda x: normalize_time(x.get("start_time"))
+    )
+    
+    # 记录上一个任务的结束时间和类型（用于计算休息恢复）
+    last_task_end_hour = start_hour
+    last_task_type = "default"
+    
+    # 生成时间轴（每2小时一个点）
+    timeline_hours = list(range(start_hour, end_hour + 1, 2))
+    
+    for hour in timeline_hours:
+        time_str = f"{hour:02d}:00"
+        
+        # 查找在这个时间点之前完成的所有任务
+        for task in sorted_tasks:
+            if task.get("_processed", False):
+                continue  # 跳过已处理的任务
+                
+            try:
+                start_time_str = normalize_time(task.get("start_time"))
+                if len(start_time_str) < 12:
+                    continue
+                
+                # 解析任务时间
+                task_start_hour = int(start_time_str[8:10])
+                task_start_minute = int(start_time_str[10:12])
+                
+                # 获取持续时间（分钟）
+                duration = task.get("duration", 60)
+                if duration < 10:  # 如果小于10，认为是小时
+                    duration = duration * 60
+                
+                # 计算任务结束时间
+                task_end_hour = task_start_hour + ((task_start_minute + duration) // 60)
+                
+                # 如果任务在当前时间点之前结束
+                if task_end_hour <= hour:
+                    # 1. 应用上一个任务后的休息恢复
+                    rest_hours = task_start_hour - last_task_end_hour
+                    if rest_hours > 0:
+                        recovery_rate = RECOVERY_RATES.get(last_task_type, RECOVERY_RATES["default"])
+                        current_energy = min(5.0, current_energy + rest_hours * recovery_rate["energy_per_hour"])
+                        current_pressure = max(0.0, current_pressure + rest_hours * recovery_rate["pressure_per_hour"])
+                    
+                    # 2. 应用任务的影响（使用 AI 模型预测值）
+                    energy_loss = abs(task.get("predicted_energy", 1.0))  # 取绝对值，确保是消耗
+                    pressure_gain = abs(task.get("predicted_pressure", 0.5))  # 取绝对值，确保是增加
+                    
+                    current_energy = max(0.0, current_energy - energy_loss)
+                    current_pressure = min(5.0, current_pressure + pressure_gain)
+                    
+                    # 3. 更新状态
+                    task["_processed"] = True
+                    last_task_end_hour = task_end_hour
+                    last_task_type = task.get("task_type", "default")
+                    
+            except Exception as e:
+                print(f"    ⚠️ Error processing task: {e}")
+                continue
+        
+        # 如果当前时间点距离上一个任务结束有间隔，继续恢复
+        rest_hours = hour - last_task_end_hour
+        if rest_hours > 0:
+            recovery_rate = RECOVERY_RATES.get(last_task_type, RECOVERY_RATES["default"])
+            current_energy = min(5.0, current_energy + rest_hours * recovery_rate["energy_per_hour"])
+            current_pressure = max(0.0, current_pressure + rest_hours * recovery_rate["pressure_per_hour"])
+            last_task_end_hour = hour
+        
+        # 记录当前时间点的状态
+        energy_timeline.append({"time": time_str, "value": round(current_energy, 2)})
+        pressure_timeline.append({"time": time_str, "value": round(current_pressure, 2)})
+    
+    return {
+        "energy_data": energy_timeline,
+        "pressure_data": pressure_timeline
+    }
+
+
 @router.get("/daily")
 async def get_daily_stats(date: str = Query(...), user_id: str = Query(...)):
     """
     返回指定日期的任务统计
     
-    Args:
-        date: 日期字符串 "YYYY-MM-DD"
-        user_id: 用户ID
-        
-    Returns:
-        {
-            "tasks_by_type": {"work": 5, "fun": 2},
-            "total_tasks": 7,
-            "completed_tasks": 5,
-            "completion_rate": 71.4,
-            "energy_data": [...],
-            "pressure_data": [...]
-        }
+    ✅ 使用 AI 模型预测值 + 基于任务类型的恢复率
     """
     try:
         print(f"\n📊 GET /stats/daily - date={date}, user_id={user_id}")
@@ -88,56 +211,55 @@ async def get_daily_stats(date: str = Query(...), user_id: str = Query(...)):
         
         todays_fixed = [t for t in fixed_tasks if is_on_date(t, is_fixed=True)]
         todays_flex = [t for t in flex_tasks if is_on_date(t, is_fixed=False)]
-        todays_all = todays_fixed + todays_flex
         
-        print(f"  Filtered to {len(todays_all)} tasks on {day_key}")
+        # 统一任务格式（fixed 和 flexible 的字段名不同）
+        normalized_tasks = []
+        for t in todays_fixed:
+            normalized_tasks.append({
+                "start_time": t.get("task_start_time"),
+                "duration": t.get("task_duration", 60),
+                "task_type": t.get("task_type", "work"),
+                "predicted_energy": t.get("predicted_energy", 1.0),
+                "predicted_pressure": t.get("predicted_pressure", 0.5),
+                "status": t.get("status")
+            })
+        
+        for t in todays_flex:
+            normalized_tasks.append({
+                "start_time": t.get("start_time"),
+                "duration": t.get("expected_duration", 60),
+                "task_type": t.get("task_type", "work"),
+                "predicted_energy": t.get("predicted_energy", 1.0),
+                "predicted_pressure": t.get("predicted_pressure", 0.5),
+                "status": t.get("status")
+            })
+        
+        print(f"  Normalized {len(normalized_tasks)} tasks for timeline calculation")
         
         # 统计数据
-        total_tasks = len(todays_all)
-        completed_tasks = sum(1 for t in todays_all if t.get("status") == "completed")
+        total_tasks = len(normalized_tasks)
+        completed_tasks = sum(1 for t in normalized_tasks if t.get("status") == "completed")
         completion_rate = (completed_tasks / total_tasks * 100) if total_tasks > 0 else 0.0
         
         # 类型分布
         tasks_by_type: Dict[str, int] = {}
-        for t in todays_all:
+        for t in normalized_tasks:
             task_type = t.get("task_type", "unknown")
             tasks_by_type[task_type] = tasks_by_type.get(task_type, 0) + 1
         
-        # 能量和压力数据（模拟数据，你可以从实际记录中获取）
-        energy_data = []
-        pressure_data = []
-        
-        # 如果有任务，生成一些示例数据点
-        if todays_all:
-            for hour in range(8, 20, 2):  # 8:00 到 20:00，每2小时一个点
-                time_str = f"{hour:02d}:00"
-                
-                # 计算该时段的平均预测值
-                hour_tasks = [
-                    t for t in todays_all 
-                    if normalize_time(t.get("start_time" if "start_time" in t else "task_start_time"))[8:10] == f"{hour:02d}"
-                ]
-                
-                if hour_tasks:
-                    avg_energy = sum(t.get("predicted_energy", 1.0) for t in hour_tasks) / len(hour_tasks)
-                    avg_pressure = sum(t.get("predicted_pressure", 0.5) for t in hour_tasks) / len(hour_tasks)
-                else:
-                    avg_energy = 1.0
-                    avg_pressure = 0.5
-                
-                energy_data.append({"time": time_str, "value": round(avg_energy, 2)})
-                pressure_data.append({"time": time_str, "value": round(avg_pressure, 2)})
+        # ✅ 使用 AI 模型预测值计算能量和压力时间轴
+        timeline = calculate_energy_pressure_timeline(normalized_tasks)
         
         result = {
             "tasks_by_type": tasks_by_type,
             "total_tasks": total_tasks,
             "completed_tasks": completed_tasks,
             "completion_rate": round(completion_rate, 1),
-            "energy_data": energy_data,
-            "pressure_data": pressure_data,
+            "energy_data": timeline["energy_data"],
+            "pressure_data": timeline["pressure_data"],
         }
         
-        print(f"  ✅ Daily stats: {result}")
+        print(f"  ✅ Daily stats: {total_tasks} tasks, {len(timeline['energy_data'])} timeline points")
         return result
         
     except HTTPException:
@@ -155,25 +277,7 @@ async def get_weekly_stats(
     end_date: str = Query(...),
     user_id: str = Query(...)
 ):
-    """
-    返回指定周的任务统计
-    
-    Args:
-        start_date: 开始日期 "YYYY-MM-DD"
-        end_date: 结束日期 "YYYY-MM-DD"
-        user_id: 用户ID
-        
-    Returns:
-        {
-            "daily_stats": [...],
-            "tasks_by_type": {"work": 20, "fun": 10},
-            "total_tasks": 30,
-            "completed_tasks": 25,
-            "completion_rate": 0.833,
-            "avg_energy_data": [...],
-            "avg_pressure_data": [...]
-        }
-    """
+    """返回指定周的任务统计"""
     try:
         print(f"\n📊 GET /stats/weekly - start={start_date}, end={end_date}, user_id={user_id}")
         
@@ -199,6 +303,11 @@ async def get_weekly_stats(
         completed_tasks = 0
         tasks_by_type: Dict[str, int] = {}
         
+        avg_energy_data = []
+        avg_pressure_data = []
+        
+        DAY_NAMES = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+        
         current_date = start_dt
         while current_date <= end_dt:
             day_key = current_date.strftime("%Y%m%d")
@@ -215,11 +324,32 @@ async def get_weekly_stats(
             
             day_fixed = [t for t in fixed_tasks if is_on_date(t, is_fixed=True)]
             day_flex = [t for t in flex_tasks if is_on_date(t, is_fixed=False)]
-            day_all = day_fixed + day_flex
+            
+            # 统一格式
+            day_normalized = []
+            for t in day_fixed:
+                day_normalized.append({
+                    "start_time": t.get("task_start_time"),
+                    "duration": t.get("task_duration", 60),
+                    "task_type": t.get("task_type", "work"),
+                    "predicted_energy": t.get("predicted_energy", 1.0),
+                    "predicted_pressure": t.get("predicted_pressure", 0.5),
+                    "status": t.get("status")
+                })
+            
+            for t in day_flex:
+                day_normalized.append({
+                    "start_time": t.get("start_time"),
+                    "duration": t.get("expected_duration", 60),
+                    "task_type": t.get("task_type", "work"),
+                    "predicted_energy": t.get("predicted_energy", 1.0),
+                    "predicted_pressure": t.get("predicted_pressure", 0.5),
+                    "status": t.get("status")
+                })
             
             # 统计
-            day_total = len(day_all)
-            day_completed = sum(1 for t in day_all if t.get("status") == "completed")
+            day_total = len(day_normalized)
+            day_completed = sum(1 for t in day_normalized if t.get("status") == "completed")
             
             daily_stats.append({
                 "date": current_date.strftime("%Y-%m-%d"),
@@ -232,27 +362,27 @@ async def get_weekly_stats(
             completed_tasks += day_completed
             
             # 累加类型统计
-            for t in day_all:
+            for t in day_normalized:
                 task_type = t.get("task_type", "unknown")
                 tasks_by_type[task_type] = tasks_by_type.get(task_type, 0) + 1
+            
+            # ✅ 计算当天的平均能量和压力
+            if day_normalized:
+                timeline = calculate_energy_pressure_timeline(day_normalized)
+                avg_energy = sum(p["value"] for p in timeline["energy_data"]) / len(timeline["energy_data"])
+                avg_pressure = sum(p["value"] for p in timeline["pressure_data"]) / len(timeline["pressure_data"])
+            else:
+                avg_energy = 5.0
+                avg_pressure = 0.0
+            
+            day_name = DAY_NAMES[current_date.weekday()]
+            avg_energy_data.append({"day": day_name, "value": round(avg_energy, 2)})
+            avg_pressure_data.append({"day": day_name, "value": round(avg_pressure, 2)})
             
             current_date += dt.timedelta(days=1)
         
         # 完成率
         completion_rate = (completed_tasks / total_tasks) if total_tasks > 0 else 0.0
-        
-        # 能量和压力数据（每天的平均值）
-        DAY_NAMES = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
-        avg_energy_data = []
-        avg_pressure_data = []
-        
-        for stat in daily_stats:
-            date_obj = dt.datetime.strptime(stat["date"], "%Y-%m-%d")
-            day_name = DAY_NAMES[date_obj.weekday()]
-            
-            # 这里使用随机值，你可以从实际数据中计算
-            avg_energy_data.append({"day": day_name, "value": 3.5})
-            avg_pressure_data.append({"day": day_name, "value": 2.5})
         
         result = {
             "daily_stats": daily_stats,
@@ -274,47 +404,3 @@ async def get_weekly_stats(
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Weekly stats error: {str(e)}")
-
-
-@router.post("/record")
-async def record_user_condition(
-    user_id: str = Query(...),
-    timestamp: str = Query(...),
-    energy: float = Query(...),
-    pressure: float = Query(...)
-):
-    """
-    记录用户的能量和压力状态
-    
-    Args:
-        user_id: 用户ID
-        timestamp: 时间戳 "YYYYMMDDHHMM"
-        energy: 能量值 (0-5)
-        pressure: 压力值 (0-5)
-    """
-    try:
-        print(f"\n📝 POST /stats/record - user={user_id}, time={timestamp}, energy={energy}, pressure={pressure}")
-        
-        # 创建记录文档
-        record = {
-            "user_id": user_id,
-            "timestamp": timestamp,
-            "energy": energy,
-            "pressure": pressure,
-            "created_at": dt.datetime.now()
-        }
-        
-        # 存储到 conditions 集合
-        result = await db["user_conditions"].insert_one(record)
-        
-        print(f"  ✅ Condition recorded with ID: {result.inserted_id}")
-        
-        return {
-            "success": True,
-            "record_id": str(result.inserted_id),
-            "message": "Condition recorded successfully"
-        }
-        
-    except Exception as e:
-        print(f"  ❌ Error: {e}")
-        raise HTTPException(status_code=500, detail=f"Record error: {str(e)}")
