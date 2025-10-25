@@ -6,7 +6,7 @@ import math
 import numpy as np
 import itertools
 from joblib import load
-
+from bson import ObjectId
 
 from database import db
 from models import FIXED_TASK_COLLECTION, FLEXIBLE_TASK_COLLECTION
@@ -14,6 +14,7 @@ from models import FIXED_TASK_COLLECTION, FLEXIBLE_TASK_COLLECTION
 
 DATETIME_FORMAT = "%Y%m%d%H%M"
 TASK_TYPE = ["food", "fun", "work"]
+
 class AIScheduler:
     def __init__(self, user_id):
         self.user_id = user_id
@@ -251,6 +252,10 @@ class Scheduler:
         assigned_tasks.sort(key=lambda x: (x["start_time"]))
         self.timetable = assigned_tasks
 
+        # ✅ 获取当前时间
+        now = dt.datetime.now()
+        print(f"  Current time: {now.strftime(DATETIME_FORMAT)}")
+        
         windows = []
         for i in range(len(assigned_tasks) - 1):
             try:
@@ -262,6 +267,11 @@ class Scheduler:
                 
                 end_time = dt.datetime.strptime(end_time_str, DATETIME_FORMAT)
                 start_time = dt.datetime.strptime(start_time_str, DATETIME_FORMAT)
+                
+                # ✅ 检查：窗口结束时间必须在当前时间之后
+                if end_time <= now:
+                    print(f"  ⏭️ Skipping past window: {end_time_str} <= {now.strftime(DATETIME_FORMAT)}")
+                    continue
                 
                 if start_time > end_time:
                     windows.append({
@@ -353,19 +363,23 @@ class Scheduler:
                 print(f"  ❌ Failed to update {task.get('name')}: {e}")
             
 
-
     def arrangeTasksToWindows(self):
         """将未分配任务分配到时间窗口"""
         print("📄 Arranging tasks to windows...")
         unscheduled_tasks = self.unscheduled_tasks.copy()
         windows = self.windows.copy()
 
+        # ✅ 新增：获取当前时间
+        now = dt.datetime.now()
+        print(f"  Current time: {now.strftime(DATETIME_FORMAT)}")
+
         for task in unscheduled_tasks:
             task_id  = task["task_id"]
-            duration = task["duration"]  # ✅ 现在这是分钟数
+            duration = task["duration"]  # 分钟数
             deadline_str = task["deadline"]
             
             if not deadline_str:
+                print(f"  ⚠️ Task {task_id[:8]} has no deadline, skipping")
                 continue
             
             try:
@@ -374,39 +388,61 @@ class Scheduler:
                 print(f"  Warning: Deadline parse error for task {task_id}: {e}")
                 continue
 
+            # ✅ 新增：检查 deadline 是否在未来
+            if deadline <= now:
+                print(f"  ⚠️ Task {task_id[:8]} deadline {deadline_str} is in the past, skipping")
+                continue
+
             scheduled = False
 
             for window in windows:
-                # 检查1：窗口开始时间要在截止日期之前
-                if window["start_time"] >= deadline:
-                    continue  # ✅ 修复：用 continue 而不是 break
+                # ✅ 新增检查1：窗口必须在当前时间之后
+                if window["end_time"] <= now:
+                    print(f"    ⏭️ Skipping past window: {window['start_time'].strftime(DATETIME_FORMAT)} - {window['end_time'].strftime(DATETIME_FORMAT)}")
+                    continue
                 
-                # 检查2：计算窗口可用时间
-                window_duration = (window["end_time"] - window["start_time"]).total_seconds() / 60
+                # ✅ 修改检查2：如果窗口开始时间在过去，但结束时间在未来，调整窗口开始时间
+                effective_start = window["start_time"]
+                if effective_start < now:
+                    effective_start = now
+                    print(f"    ⏰ Adjusting window start from {window['start_time'].strftime(DATETIME_FORMAT)} to {now.strftime(DATETIME_FORMAT)}")
+                
+                # 检查3：窗口开始时间要在截止日期之前
+                if effective_start >= deadline:
+                    print(f"    ⏩ Window start {effective_start.strftime(DATETIME_FORMAT)} >= deadline {deadline_str}, skipping")
+                    continue
+                
+                # 检查4：计算窗口可用时间（从有效开始时间算起）
+                available_window_duration = (window["end_time"] - effective_start).total_seconds() / 60
                 used_duration = sum(t["duration"] for t in window["tasks"])
-                available_duration = window_duration - used_duration
+                available_duration = available_window_duration - used_duration
                 
-                # 检查3：任务必须能放进可用空间（留 25% 缓冲用于休息）
+                # 检查5：任务必须能放进可用空间（留 25% 缓冲用于休息）
                 required_duration = duration * 1.25
                 
-                # 检查4：最终时间不能超过窗口结束或任务截止
+                # 检查6：最终时间不能超过窗口结束或任务截止
                 if required_duration <= available_duration:
-                    tasks_end_time = window["start_time"] + dt.timedelta(
+                    # ✅ 修改：从有效开始时间计算任务结束时间
+                    tasks_end_time = effective_start + dt.timedelta(
                         minutes=used_duration + duration
                     )
                     
                     if tasks_end_time <= window["end_time"] and tasks_end_time <= deadline:
                         window["tasks"].append(task)
                         scheduled = True
-                        print(f"  ✓ Task {task_id[:8]} ({duration}min) scheduled in window {window['start_time'].strftime(DATETIME_FORMAT)}")
+                        print(f"  ✅ Task {task_id[:8]} ({duration}min) scheduled in window {effective_start.strftime(DATETIME_FORMAT)} - {window['end_time'].strftime(DATETIME_FORMAT)}")
                         break
+                    else:
+                        print(f"    ❌ Task end {tasks_end_time.strftime(DATETIME_FORMAT)} exceeds window/deadline")
+                else:
+                    print(f"    ❌ Required {required_duration:.0f}min > available {available_duration:.0f}min")
             
             if not scheduled:
-                print(f"  ✗ Task {task_id[:8]} ({duration}min) could not be scheduled")
+                print(f"  ❌ Task {task_id[:8]} ({duration}min, deadline {deadline_str}) could not be scheduled")
         
         self.unscheduled_tasks = unscheduled_tasks
         self.windows = windows
-        print(f"  {len(self.unscheduled_tasks)} tasks remaining unscheduled")
+        print(f"  ✅ {len([t for w in windows for t in w['tasks']])} tasks scheduled, {len(self.unscheduled_tasks)} remaining unscheduled")
 
     def scheduleTasksInWindow(self):
         """在每个窗口内最优排序任务"""
@@ -551,6 +587,10 @@ class Scheduler:
         
         print(f"🔄 Incremental Update: {len(deleted_tasks)} deleted, {len(new_fixed_tasks)} new fixed, {len(new_flexible_tasks)} new flexible")
         
+        # ✅ 添加当前时间检查
+        now = dt.datetime.now()
+        print(f"  Current time: {now.strftime(DATETIME_FORMAT)}")
+        
         # ===== 1. 处理删除任务 =====
         if deleted_tasks:
             print("🗑️ Processing deleted tasks...")
@@ -619,23 +659,38 @@ class Scheduler:
                         duration = task["duration"]
                         deadline = dt.datetime.strptime(task["deadline"], DATETIME_FORMAT)
                         
+                        # ✅ 检查 deadline 是否在未来
+                        if deadline <= now:
+                            print(f"    ⚠️ Task {task_id[:8]} deadline is in the past, discarding")
+                            continue
+                        
                         scheduled = False
                         for window in self.windows:
-                            if window["start_time"] >= deadline:
+                            # ✅ 检查窗口是否在未来
+                            if window["end_time"] <= now:
+                                continue
+                            
+                            # ✅ 调整窗口开始时间
+                            effective_start = max(window["start_time"], now)
+                            
+                            if effective_start >= deadline:
                                 break
                             
-                            window_duration = (window["end_time"] - window["start_time"]).total_seconds() / 60
+                            # 计算可用时间
+                            available_window_duration = (window["end_time"] - effective_start).total_seconds() / 60
                             used_duration = sum(t["duration"] for t in window["tasks"])
                             
-                            if (used_duration + duration) * 1.25 <= window_duration:
-                                window["tasks"].append(task)
-                                affected_windows_for_reschedule.add(id(window))
-                                scheduled = True
-                                break
+                            if (used_duration + duration) * 1.25 <= available_window_duration:
+                                tasks_end_time = effective_start + dt.timedelta(minutes=used_duration + duration)
+                                if tasks_end_time <= window["end_time"] and tasks_end_time <= deadline:
+                                    window["tasks"].append(task)
+                                    affected_windows_for_reschedule.add(id(window))
+                                    scheduled = True
+                                    break
                         
                         if not scheduled:
                             self.unscheduled_tasks.append(task)
-                            print(f"    ✗ Task {task_id} could not be rescheduled")
+                            print(f"    ❌ Task {task_id[:8]} could not be rescheduled")
             except Exception as e:
                 print(f"  Error processing fixed tasks: {e}")
         
@@ -677,19 +732,33 @@ class Scheduler:
                     duration = task["duration"]
                     deadline = dt.datetime.strptime(task["deadline"], DATETIME_FORMAT)
                     
+                    # ✅ 检查 deadline 是否在未来
+                    if deadline <= now:
+                        print(f"    ⚠️ Task {task_id[:8]} deadline is in the past, discarding")
+                        continue
+                    
                     scheduled = False
                     for window in self.windows:
-                        if window["start_time"] >= deadline:
+                        # ✅ 检查窗口是否在未来
+                        if window["end_time"] <= now:
+                            continue
+                        
+                        # ✅ 调整窗口开始时间
+                        effective_start = max(window["start_time"], now)
+                        
+                        if effective_start >= deadline:
                             break
                         
-                        window_duration = (window["end_time"] - window["start_time"]).total_seconds() / 60
+                        window_duration = (window["end_time"] - effective_start).total_seconds() / 60
                         used_duration = sum(t["duration"] for t in window["tasks"])
                         
                         if (used_duration + duration) * 1.25 <= window_duration:
-                            window["tasks"].append(task)
-                            affected_windows_for_reschedule.add(id(window))
-                            scheduled = True
-                            break
+                            tasks_end_time = effective_start + dt.timedelta(minutes=used_duration + duration)
+                            if tasks_end_time <= window["end_time"] and tasks_end_time <= deadline:
+                                window["tasks"].append(task)
+                                affected_windows_for_reschedule.add(id(window))
+                                scheduled = True
+                                break
                     
                     if not scheduled:
                         self.unscheduled_tasks.append(task)
