@@ -121,7 +121,7 @@ export default function Schedule({ refreshFlag }) {
   const fetchTasksFromDB = useCallback(async () => {
     if (!userId) return;
     try {
-      console.log("🔄 Fetching tasks from DB for user:", userId);
+      console.log("📄 Fetching tasks from DB for user:", userId);
       const res = await getTasks(`${userId}/all`);
       const fixedRaw = res?.data?.fixed || [];
       const flexibleRaw = res?.data?.flexible || [];
@@ -191,7 +191,13 @@ export default function Schedule({ refreshFlag }) {
   };
 
   return (
-    <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+    // ✅ 关键修改：设置外层容器为全屏高度
+    <div style={{ 
+      height: "100vh", // 占满整个视口
+      display: "flex", 
+      flexDirection: "column",
+      overflow: "hidden" // 防止整体滚动
+    }}>
       <HeaderBar
         onAddTask={() => {
           setDefaultTime("");
@@ -205,7 +211,12 @@ export default function Schedule({ refreshFlag }) {
         setPressure={setPressure}
       />
 
-      <div style={{ flex: 1, padding: 20 }}>
+      {/* ✅ 关键修改：日历容器占满剩余空间 */}
+      <div style={{ 
+        flex: 1, // 占据所有剩余空间
+        overflow: "auto", // 允许内部滚动
+        padding: "20px"
+      }}>
         <Calendar
           tasks={tasks}
           onAddTask={() => {
